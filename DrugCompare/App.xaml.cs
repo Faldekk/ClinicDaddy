@@ -2,7 +2,9 @@
 using DrugCompare.ViewModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using DrugCompare.Services.Contracts;
 using System.Windows;
+using DrugCompare.Services.Application;
 
 namespace DrugCompare;
 
@@ -10,7 +12,7 @@ public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -23,8 +25,26 @@ public partial class App : Application
 
         services.AddSingleton<IConfiguration>(configuration);
 
-     
-        services.AddSingleton<IDrugDataService, PostgresDrugDataService>();
+        services.AddTransient<InteractionAnalysisService>();
+        services.AddSingleton<PostgresDrugDataService>();
+
+        services.AddSingleton<IDrugLookupService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<ISubstanceLookupService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<IInteractionCheckerService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<IDatabaseStatusService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<IInteractionHistoryService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<ISubstanceSynonymService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
 
         services.AddTransient<MainViewModel>();
         services.AddTransient<MainWindow>();
@@ -32,6 +52,38 @@ public partial class App : Application
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        MainWindow = mainWindow;
         mainWindow.Show();
+
+        await ShowStartupDatabaseStatsAsync(mainWindow);
+    }
+
+    private async Task ShowStartupDatabaseStatsAsync(Window owner)
+    {
+        if (_serviceProvider is null)
+            return;
+
+        try
+        {
+            var databaseStatusService = _serviceProvider.GetRequiredService<IDatabaseStatusService>();
+            var status = await databaseStatusService.GetDatabaseStatusAsync();
+
+            var viewModel = new DatabaseStatsViewModel(status);
+
+            var statsWindow = new DatabaseStatsWindow(viewModel)
+            {
+                Owner = owner
+            };
+
+            statsWindow.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Could not load database statistics.\n\n{ex.Message}",
+                "Database statistics unavailable",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
     }
 }

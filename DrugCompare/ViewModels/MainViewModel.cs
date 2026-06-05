@@ -2,25 +2,47 @@
 using CommunityToolkit.Mvvm.Input;
 using DrugCompare.Models;
 using DrugCompare.Services;
+using DrugCompare.Services.Contracts;
+using Microsoft.Win32;
 using System.Collections.ObjectModel;
+using DrugCompare.Services.Application;
+using System.IO;
 
 namespace DrugCompare.ViewModels;
 
 public sealed class MainViewModel : ObservableObject
 {
-    private readonly IDrugDataService _drugDataService;
-
+    private readonly IDrugLookupService _drugLookupService;
+    private readonly ISubstanceLookupService _substanceLookupService;
+    private readonly IInteractionCheckerService _interactionCheckerService;
+    private readonly IDatabaseStatusService _databaseStatusService;
+    private readonly IInteractionHistoryService _interactionHistoryService;
+    private readonly InteractionAnalysisService _interactionAnalysisService;
     private string _drugNameInput = string.Empty;
     private string _manualSubstanceInput = string.Empty;
     private ActiveSubstanceItem? _selectedDetectedSubstance;
     private ActiveSubstanceItem? _selectedAcceptedSubstance;
     private InteractionResult? _selectedInteraction;
+    private string _resultSummaryMessage = "No interaction check performed yet.";
     private string _statusMessage = "Ready.";
     private bool _isBusy;
-
-    public MainViewModel(IDrugDataService drugDataService)
+    private string _databaseStatusText = "Database status not loaded.";
+    public ObservableCollection<InteractionHistoryItem> InteractionHistory { get; } = new();
+    public IRelayCommand ExportCurrentReportCommand { get; }
+    public MainViewModel(
+    IDrugLookupService drugLookupService,
+    ISubstanceLookupService substanceLookupService,
+    IInteractionCheckerService interactionCheckerService,
+    IDatabaseStatusService databaseStatusService,
+    IInteractionHistoryService interactionHistoryService,
+    InteractionAnalysisService interactionAnalysisService)
     {
-        _drugDataService = drugDataService;
+        _drugLookupService = drugLookupService;
+        _substanceLookupService = substanceLookupService;
+        _interactionCheckerService = interactionCheckerService;
+        _databaseStatusService = databaseStatusService;
+        _interactionHistoryService = interactionHistoryService;
+        _interactionAnalysisService = interactionAnalysisService;
 
         FindDrugCommand = new AsyncRelayCommand(FindDrugAsync);
         AcceptDetectedSubstanceCommand = new RelayCommand(AcceptDetectedSubstance);
@@ -28,15 +50,27 @@ public sealed class MainViewModel : ObservableObject
         AddManualSubstanceCommand = new AsyncRelayCommand(AddManualSubstanceAsync);
         RemoveAcceptedSubstanceCommand = new RelayCommand(RemoveAcceptedSubstance);
         ClearCaseCommand = new RelayCommand(ClearCase);
-        CheckInteractionsCommand = new AsyncRelayCommand(CheckInteractionsAsync);
-    }
 
+        CheckInteractionsCommand = new AsyncRelayCommand(CheckInteractionsAsync);
+        LoadDatabaseStatusCommand = new AsyncRelayCommand(LoadDatabaseStatusAsync);
+        LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync);
+        ExportCurrentReportCommand = new RelayCommand(ExportCurrentReport);
+    }
+    public string DatabaseStatusText
+    {
+        get => _databaseStatusText;
+        set => SetProperty(ref _databaseStatusText, value);
+    }
     public string DrugNameInput
     {
         get => _drugNameInput;
         set => SetProperty(ref _drugNameInput, value);
     }
-
+    public string ResultSummaryMessage
+    {
+        get => _resultSummaryMessage;
+        set => SetProperty(ref _resultSummaryMessage, value);
+    }
     public string ManualSubstanceInput
     {
         get => _manualSubstanceInput;
@@ -80,6 +114,7 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<InteractionResult> InteractionResults { get; } = new();
 
     public IAsyncRelayCommand FindDrugCommand { get; }
+    public IAsyncRelayCommand LoadHistoryCommand { get; }
 
     public IRelayCommand AcceptDetectedSubstanceCommand { get; }
 
@@ -92,7 +127,38 @@ public sealed class MainViewModel : ObservableObject
     public IRelayCommand ClearCaseCommand { get; }
 
     public IAsyncRelayCommand CheckInteractionsCommand { get; }
+    public IAsyncRelayCommand LoadDatabaseStatusCommand { get; }
+    public async Task<DatabaseStatusResult> GetDatabaseStatusForStartupAsync()
+    {
+        return await _databaseStatusService.GetDatabaseStatusAsync();
+    }
+    private async Task LoadDatabaseStatusAsync()
+    {
+        IsBusy = true;
+        StatusMessage = "Loading database status...";
 
+        try
+        {
+            var status = await _databaseStatusService.GetDatabaseStatusAsync();
+
+            DatabaseStatusText =
+                $"Drugs: {status.DrugsCount:N0} | " +
+                $"Active substances: {status.ActiveSubstancesCount:N0} | " +
+                $"Relations: {status.DrugActiveSubstancesCount:N0} | " +
+                $"Interactions: {status.SubstanceInteractionsCount:N0}";
+
+            StatusMessage = "Database status loaded.";
+        }
+        catch (Exception ex)
+        {
+            DatabaseStatusText = "Database status unavailable.";
+            StatusMessage = $"Database status failed: {ex.Message}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
     private async Task FindDrugAsync()
     {
         DetectedSubstances.Clear();
@@ -108,7 +174,7 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            var result = await _drugDataService.FindDrugAsync(DrugNameInput);
+            var result = await _drugLookupService.FindDrugAsync(DrugNameInput);
 
             if (result is null)
             {
@@ -159,7 +225,109 @@ public sealed class MainViewModel : ObservableObject
 
         StatusMessage = "Detected active substances accepted.";
     }
+    private string BuildCurrentReport()
+    {
+        var highestSeverity = InteractionResults.Count == 0
+            ? "None"
+            : InteractionResults
+                .OrderByDescending(x => GetSeverityScore(x.Severity))
+                .First()
+                .Severity;
 
+        var report = new StringWriter();
+
+        report.WriteLine("Drug Compare Interaction Report");
+        report.WriteLine("================================");
+        report.WriteLine();
+        report.WriteLine($"Generated at: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");
+        report.WriteLine($"Highest severity: {highestSeverity}");
+        report.WriteLine();
+
+        report.WriteLine("Accepted active substances:");
+        report.WriteLine("---------------------------");
+
+        foreach (var substance in AcceptedSubstances)
+        {
+            report.WriteLine($"- {substance.Name}");
+            report.WriteLine($"  Database ID: {substance.DatabaseId}");
+            report.WriteLine($"  DDInter ID: {substance.DDInterId}");
+            report.WriteLine($"  Source: {substance.Source}");
+        }
+
+        report.WriteLine();
+
+        report.WriteLine("Detected interactions:");
+        report.WriteLine("----------------------");
+
+        if (InteractionResults.Count == 0)
+        {
+            report.WriteLine("No known interaction was found in the local DDInter-based database.");
+            report.WriteLine("This does not mean that the combination is safe.");
+        }
+        else
+        {
+            foreach (var interaction in InteractionResults)
+            {
+                report.WriteLine($"- {interaction.SubstanceA} + {interaction.SubstanceB}");
+                report.WriteLine($"  Severity: {interaction.Severity}");
+                report.WriteLine($"  Message: {interaction.Message}");
+                report.WriteLine($"  Source: {interaction.Source}");
+                report.WriteLine();
+            }
+        }
+
+        report.WriteLine();
+        report.WriteLine("Medical disclaimer:");
+        report.WriteLine("-------------------");
+        report.WriteLine("This application is an educational clinical decision-support prototype.");
+        report.WriteLine("It does not replace physician or pharmacist judgment.");
+        report.WriteLine("Missing interaction data does not mean that a combination is safe.");
+        report.WriteLine("Every result must be clinically verified by qualified medical personnel.");
+
+        return report.ToString();
+    }
+    private void ExportCurrentReport()
+    {
+        if (AcceptedSubstances.Count == 0)
+        {
+            StatusMessage = "No accepted substances to export.";
+            return;
+        }
+
+        var dialog = new SaveFileDialog
+        {
+            Title = "Export interaction report",
+            Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*",
+            FileName = $"drug-compare-report-{DateTime.Now:yyyyMMdd-HHmm}.txt"
+        };
+
+        if (dialog.ShowDialog() != true)
+            return;
+
+        try
+        {
+            var report = BuildCurrentReport();
+
+            File.WriteAllText(dialog.FileName, report);
+
+            StatusMessage = $"Report exported: {dialog.FileName}";
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Report export failed: {ex.Message}";
+        }
+    }
+    private static int GetSeverityScore(string severity)
+    {
+        return severity switch
+        {
+            "Contraindicated" => 4,
+            "Major" => 3,
+            "Moderate" => 2,
+            "Minor" => 1,
+            _ => 0
+        };
+    }
     private async Task AddManualSubstanceAsync()
     {
         if (string.IsNullOrWhiteSpace(ManualSubstanceInput))
@@ -172,7 +340,7 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            var substance = await _drugDataService.FindActiveSubstanceAsync(ManualSubstanceInput);
+            var substance = await _substanceLookupService.FindActiveSubstanceAsync(ManualSubstanceInput);
 
             if (substance is null)
             {
@@ -209,6 +377,7 @@ public sealed class MainViewModel : ObservableObject
 
     private void ClearCase()
     {
+
         DrugNameInput = string.Empty;
         ManualSubstanceInput = string.Empty;
 
@@ -220,7 +389,26 @@ public sealed class MainViewModel : ObservableObject
         SelectedAcceptedSubstance = null;
         SelectedInteraction = null;
 
+        ResultSummaryMessage = "No interaction check performed yet.";
+
         StatusMessage = "Case cleared.";
+    }
+    private async Task LoadHistoryAsync()
+    {
+        try
+        {
+            InteractionHistory.Clear();
+
+            var items = await _interactionHistoryService.GetRecentHistoryAsync(20);
+            foreach (var item in items)
+            {
+                InteractionHistory.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"Loading history failed: {ex.Message}";
+        }
     }
 
     private async Task CheckInteractionsAsync()
@@ -230,6 +418,7 @@ public sealed class MainViewModel : ObservableObject
 
         if (AcceptedSubstances.Count < 2)
         {
+            ResultSummaryMessage = "At least two active substances are required to check interactions.";
             StatusMessage = "At least two active substances are required.";
             return;
         }
@@ -239,23 +428,20 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            var results = await _drugDataService.CheckInteractionsAsync(AcceptedSubstances.ToList());
-            StatusMessage = $"Service returned {results.Count} interaction(s).";
+            var analysis = await _interactionAnalysisService.AnalyzeAsync(
+                AcceptedSubstances.ToList());
 
-            foreach (var result in results)
+            foreach (var interaction in analysis.Interactions)
             {
-                InteractionResults.Add(result);
-            }
-
-            if (results.Count == 0)
-            {
-                StatusMessage = "No known interaction was found in the local DDInter-based database. This does not mean the combination is safe.";
-                return;
+                InteractionResults.Add(interaction);
             }
 
             SelectedInteraction = InteractionResults.FirstOrDefault();
 
-            StatusMessage = $"Found {results.Count} known interaction(s). Clinical verification is required.";
+            ResultSummaryMessage = analysis.SummaryMessage;
+            StatusMessage = analysis.SummaryMessage;
+
+            await LoadHistoryAsync();
         }
         catch (Exception ex)
         {

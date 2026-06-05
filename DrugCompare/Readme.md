@@ -4,6 +4,8 @@
 
 The application is designed as a clinical decision-support prototype. It does not diagnose, prescribe, or replace the judgment of a physician or pharmacist.
 
+Special shoutout to @RiKKy44 for helping with designing an architecture of a first prototype.
+
 ---
 
 ## Purpose
