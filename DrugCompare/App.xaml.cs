@@ -4,8 +4,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using DrugCompare.Services.Contracts;
 using System.Windows;
+using DrugCompare.Views;
 using DrugCompare.Services.Application;
-
+using DrugCompare.Repositories;
+using DrugCompare.Repositories.Contracts;
 namespace DrugCompare;
 
 public partial class App : Application
@@ -25,7 +27,13 @@ public partial class App : Application
 
         services.AddSingleton<IConfiguration>(configuration);
 
-        services.AddTransient<InteractionAnalysisService>();
+        services.AddSingleton<IDrugRepository, PostgresDrugRepository>();
+        services.AddSingleton<ISubstanceRepository, PostgresSubstanceRepository>();
+        services.AddSingleton<IInteractionRepository, PostgresInteractionRepository>();
+        services.AddSingleton<IInteractionHistoryRepository, PostgresInteractionHistoryRepository>();
+        services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
+        services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
+
         services.AddSingleton<PostgresDrugDataService>();
 
         services.AddSingleton<IDrugLookupService>(sp =>
@@ -34,17 +42,23 @@ public partial class App : Application
         services.AddSingleton<ISubstanceLookupService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
-        services.AddSingleton<IInteractionCheckerService>(sp =>
+        services.AddSingleton<ISubstanceSynonymService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
-        services.AddSingleton<IDatabaseStatusService>(sp =>
+        services.AddSingleton<IInteractionCheckerService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
         services.AddSingleton<IInteractionHistoryService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
-        services.AddSingleton<ISubstanceSynonymService>(sp =>
+        services.AddSingleton<IDatabaseStatusService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<IDataManagementService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+
+        services.AddTransient<InteractionAnalysisService>();
 
         services.AddTransient<MainViewModel>();
         services.AddTransient<MainWindow>();

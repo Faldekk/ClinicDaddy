@@ -1,0 +1,52 @@
+﻿<UserControl x:Class="DrugCompare.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Border Background="White"
+            CornerRadius="12"
+            Padding="14"
+            BorderBrush="#D6DEE8"
+            BorderThickness="1"
+            Margin="0,12,0,0">
+        <StackPanel>
+            <TextBlock Text="Settings"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Margin="0,0,0,8"/>
+
+            <TextBlock Text="Current prototype settings are stored locally in appsettings.json."
+                       FontSize="12"
+                       Foreground="#607080"
+                       Margin="0,0,0,16"/>
+
+            <TextBlock Text="Configuration"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock Text="Database: PostgreSQL"
+                       FontSize="12"
+                       Margin="0,0,0,4"/>
+
+            <TextBlock Text="Mode: Local only"
+                       FontSize="12"
+                       Margin="0,0,0,4"/>
+
+            <TextBlock Text="Cloud services: Disabled"
+                       FontSize="12"
+                       Margin="0,0,0,16"/>
+
+            <Separator Margin="0,0,0,16"/>
+
+            <TextBlock Text="Medical safety note"
+                       FontSize="14"
+                       FontWeight="Bold"
+                       Margin="0,0,0,6"/>
+
+            <TextBlock Text="This application is an educational clinical decision-support prototype. It does not replace physician or pharmacist judgment. Missing interaction data does not mean that a drug combination is safe."
+                       FontSize="12"
+                       Foreground="#8A5A00"
+                       TextWrapping="Wrap"/>
+        </StackPanel>
+    </Border>
+</UserControl>

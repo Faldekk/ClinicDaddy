@@ -17,6 +17,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IInteractionCheckerService _interactionCheckerService;
     private readonly IDatabaseStatusService _databaseStatusService;
     private readonly IInteractionHistoryService _interactionHistoryService;
+    private readonly IDataManagementService _dataManagementService;
     private readonly InteractionAnalysisService _interactionAnalysisService;
     private string _drugNameInput = string.Empty;
     private string _manualSubstanceInput = string.Empty;
@@ -25,6 +26,8 @@ public sealed class MainViewModel : ObservableObject
     private InteractionResult? _selectedInteraction;
     private string _resultSummaryMessage = "No interaction check performed yet.";
     private string _statusMessage = "Ready.";
+    private string _emaImportSummary = "EMA import status not loaded.";
+    private string _ddinterImportSummary = "DDInter import status not loaded.";
     private bool _isBusy;
     private string _databaseStatusText = "Database status not loaded.";
     public ObservableCollection<InteractionHistoryItem> InteractionHistory { get; } = new();
@@ -35,6 +38,7 @@ public sealed class MainViewModel : ObservableObject
     IInteractionCheckerService interactionCheckerService,
     IDatabaseStatusService databaseStatusService,
     IInteractionHistoryService interactionHistoryService,
+    IDataManagementService dataManagementService,
     InteractionAnalysisService interactionAnalysisService)
     {
         _drugLookupService = drugLookupService;
@@ -42,6 +46,7 @@ public sealed class MainViewModel : ObservableObject
         _interactionCheckerService = interactionCheckerService;
         _databaseStatusService = databaseStatusService;
         _interactionHistoryService = interactionHistoryService;
+        _dataManagementService = dataManagementService;
         _interactionAnalysisService = interactionAnalysisService;
 
         FindDrugCommand = new AsyncRelayCommand(FindDrugAsync);
@@ -50,16 +55,27 @@ public sealed class MainViewModel : ObservableObject
         AddManualSubstanceCommand = new AsyncRelayCommand(AddManualSubstanceAsync);
         RemoveAcceptedSubstanceCommand = new RelayCommand(RemoveAcceptedSubstance);
         ClearCaseCommand = new RelayCommand(ClearCase);
-
         CheckInteractionsCommand = new AsyncRelayCommand(CheckInteractionsAsync);
         LoadDatabaseStatusCommand = new AsyncRelayCommand(LoadDatabaseStatusAsync);
         LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync);
+        LoadDataManagementCommand = new AsyncRelayCommand(LoadDataManagementAsync);
         ExportCurrentReportCommand = new RelayCommand(ExportCurrentReport);
     }
     public string DatabaseStatusText
     {
         get => _databaseStatusText;
         set => SetProperty(ref _databaseStatusText, value);
+    }
+    public string EmaImportSummary
+    {
+        get => _emaImportSummary;
+        set => SetProperty(ref _emaImportSummary, value);
+    }
+
+    public string DdinterImportSummary
+    {
+        get => _ddinterImportSummary;
+        set => SetProperty(ref _ddinterImportSummary, value);
     }
     public string DrugNameInput
     {
@@ -112,8 +128,10 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<ActiveSubstanceItem> AcceptedSubstances { get; } = new();
 
     public ObservableCollection<InteractionResult> InteractionResults { get; } = new();
+    public ObservableCollection<DataSourceVersionItem> RecentDataImports { get; } = new();
 
     public IAsyncRelayCommand FindDrugCommand { get; }
+
     public IAsyncRelayCommand LoadHistoryCommand { get; }
 
     public IRelayCommand AcceptDetectedSubstanceCommand { get; }
@@ -128,9 +146,49 @@ public sealed class MainViewModel : ObservableObject
 
     public IAsyncRelayCommand CheckInteractionsCommand { get; }
     public IAsyncRelayCommand LoadDatabaseStatusCommand { get; }
+    public IAsyncRelayCommand LoadDataManagementCommand { get; }
     public async Task<DatabaseStatusResult> GetDatabaseStatusForStartupAsync()
     {
         return await _databaseStatusService.GetDatabaseStatusAsync();
+    }
+    private static string BuildImportSummary(string sourceName, DataSourceVersionItem? item)
+    {
+        if (item is null)
+            return $"{sourceName}: no import record found.";
+
+        return
+            $"{sourceName}: {item.ImportStatus} | " +
+            $"File: {item.FileName} | " +
+            $"Records: {item.RecordsImported:N0} | " +
+            $"Imported: {item.ImportedAt:yyyy-MM-dd HH:mm}";
+    }
+    private async Task LoadDataManagementAsync()
+    {
+        IsBusy = true;
+        StatusMessage = "Loading data management status...";
+
+        try
+        {
+            var result = await _dataManagementService.GetDataManagementStatusAsync();
+
+            EmaImportSummary = BuildImportSummary("EMA", result.LatestEmaImport);
+            DdinterImportSummary = BuildImportSummary("DDInter", result.LatestDdinterImport);
+
+            RecentDataImports.Clear();
+
+            foreach (var item in result.RecentImports)
+            {
+                RecentDataImports.Add(item);
+            }
+
+            StatusMessage = "Data management status loaded.";
+        }
+        catch (Exception ex)
+        {
+            EmaImportSummary = "EMA import status unavailable.";
+            DdinterImportSummary = "DDInter import status unavailable.";
+            StatusMessage = $"Data management loading failed: {ex.Message}";
+        }
     }
     private async Task LoadDatabaseStatusAsync()
     {

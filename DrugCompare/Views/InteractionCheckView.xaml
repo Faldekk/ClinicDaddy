@@ -1,0 +1,370 @@
+﻿    <UserControl x:Class="DrugCompare.Views.InteractionCheckView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:DrugCompare.Converters">
+    
+    <UserControl.Resources>
+        <converters:SeverityToBrushConverter x:Key="SeverityToBrushConverter"/>
+    </UserControl.Resources>
+
+
+
+    <Grid Margin="0,12,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.95*"/>
+            <ColumnDefinition Width="0.95*"/>
+            <ColumnDefinition Width="1.55*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- LEFT PANEL -->
+        <Border Grid.Column="0"
+                Background="White"
+                CornerRadius="12"
+                Padding="14"
+                BorderBrush="#D6DEE8"
+                BorderThickness="1"
+                Margin="0,0,8,0">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="1. Drug lookup"
+                           FontSize="17"
+                           FontWeight="Bold"
+                           Margin="0,0,0,10"/>
+
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="Drug name"
+                               FontSize="12"
+                               FontWeight="SemiBold"/>
+
+                    <TextBox Text="{Binding DrugNameInput, UpdateSourceTrigger=PropertyChanged}"
+                             Height="32"
+                             Margin="0,4,0,8"/>
+
+                    <Button Content="Find drug"
+                            Command="{Binding FindDrugCommand}"
+                            Height="34"
+                            Margin="0,0,0,12"/>
+                </StackPanel>
+
+                <Grid Grid.Row="2">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0"
+                               Text="Detected active substances"
+                               FontSize="12"
+                               FontWeight="SemiBold"
+                               Margin="0,0,0,5"/>
+
+                    <ListBox Grid.Row="1"
+                             ItemsSource="{Binding DetectedSubstances}"
+                             SelectedItem="{Binding SelectedDetectedSubstance}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="6"
+                                        Margin="0,0,0,4"
+                                        BorderBrush="#E2E8F0"
+                                        BorderThickness="0,0,0,1">
+                                    <StackPanel>
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="SemiBold"
+                                                   FontSize="12"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Text="{Binding DDInterId}"
+                                                   Foreground="#607080"
+                                                   FontSize="10"
+                                                   TextWrapping="Wrap"/>
+
+                                        <TextBlock Text="{Binding Source}"
+                                                   Foreground="#607080"
+                                                   FontSize="10"
+                                                   TextWrapping="Wrap"/>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+
+                <Grid Grid.Row="3"
+                      Margin="0,10,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+
+                    <Button Grid.Column="0"
+                            Content="Accept selected"
+                            Command="{Binding AcceptDetectedSubstanceCommand}"
+                            Height="34"
+                            Margin="0,0,5,0"/>
+
+                    <Button Grid.Column="1"
+                            Content="Accept all"
+                            Command="{Binding AcceptAllDetectedSubstancesCommand}"
+                            Height="34"
+                            Margin="5,0,0,0"/>
+                </Grid>
+
+                <Separator Grid.Row="4"
+                           Margin="0,0,0,12"/>
+
+                <StackPanel Grid.Row="5">
+                    <TextBlock Text="2. Manual active substance"
+                               FontSize="17"
+                               FontWeight="Bold"
+                               Margin="0,0,0,10"/>
+
+                    <TextBlock Text="Active substance name"
+                               FontSize="12"
+                               FontWeight="SemiBold"/>
+
+                    <TextBox Text="{Binding ManualSubstanceInput, UpdateSourceTrigger=PropertyChanged}"
+                             Height="32"
+                             Margin="0,4,0,8"/>
+
+                    <Button Content="Add active substance"
+                            Command="{Binding AddManualSubstanceCommand}"
+                            Height="34"/>
+
+                    <TextBlock Text="Tip: for DDInter tests, paste the exact active substance name from the database."
+                               FontSize="11"
+                               Foreground="#607080"
+                               TextWrapping="Wrap"
+                               Margin="0,10,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- MIDDLE PANEL -->
+        <Border Grid.Column="1"
+                Background="White"
+                CornerRadius="12"
+                Padding="14"
+                BorderBrush="#D6DEE8"
+                BorderThickness="1"
+                Margin="8,0,8,0">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="3. Accepted active substances"
+                           FontSize="17"
+                           FontWeight="Bold"
+                           Margin="0,0,0,10"/>
+
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding AcceptedSubstances}"
+                         SelectedItem="{Binding SelectedAcceptedSubstance}">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border BorderBrush="#D6DEE8"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="8"
+                                    Margin="0,0,0,6">
+                                <StackPanel>
+                                    <TextBlock Text="{Binding Name}"
+                                               FontWeight="Bold"
+                                               FontSize="12"
+                                               TextWrapping="Wrap"/>
+
+                                    <TextBlock Text="{Binding DatabaseId, StringFormat=DB ID: {0}}"
+                                               Foreground="#607080"
+                                               FontSize="10"
+                                               Margin="0,3,0,0"/>
+
+                                    <TextBlock Text="{Binding DDInterId, StringFormat=DDInter: {0}}"
+                                               Foreground="#607080"
+                                               FontSize="10"
+                                               Margin="0,2,0,0"/>
+
+                                    <TextBlock Text="{Binding Source}"
+                                               Foreground="#607080"
+                                               FontSize="10"
+                                               TextWrapping="Wrap"
+                                               Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <StackPanel Grid.Row="2"
+                            Margin="0,10,0,0">
+                    <Button Content="Remove selected substance"
+                            Command="{Binding RemoveAcceptedSubstanceCommand}"
+                            Height="34"
+                            Margin="0,0,0,7"/>
+
+                    <Button Content="Check interactions"
+                            Command="{Binding CheckInteractionsCommand}"
+                            Height="40"
+                            FontWeight="Bold"
+                            Background="#1E6FB8"
+                            Foreground="White"
+                            BorderBrush="#155A94"
+                            Margin="0,0,0,7"/>
+
+                    <Button Content="Export current report"
+                            Command="{Binding ExportCurrentReportCommand}"
+                            Height="34"
+                            Margin="0,0,0,7"/>
+
+                    <Button Content="Clear case"
+                            Command="{Binding ClearCaseCommand}"
+                            Height="34"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- RIGHT PANEL -->
+        <Border Grid.Column="2"
+                Background="White"
+                CornerRadius="12"
+                Padding="14"
+                BorderBrush="#D6DEE8"
+                BorderThickness="1"
+                Margin="8,0,0,0">
+
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="2.2*"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="1*"/>
+                </Grid.RowDefinitions>
+
+                <TextBlock Grid.Row="0"
+                           Text="4. Interaction results"
+                           FontSize="17"
+                           FontWeight="Bold"
+                           Margin="0,0,0,10"/>
+
+                <Border Grid.Row="1"
+                        Background="#FFF7E6"
+                        BorderBrush="#F2C879"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="10"
+                        Margin="0,0,0,10">
+                    <TextBlock Text="{Binding ResultSummaryMessage}"
+                               FontSize="12"
+                               Foreground="#8A5A00"
+                               TextWrapping="Wrap"/>
+                </Border>
+
+                <DataGrid Grid.Row="2"
+                          ItemsSource="{Binding InteractionResults}"
+                          SelectedItem="{Binding SelectedInteraction}"
+                          AutoGenerateColumns="False"
+                          IsReadOnly="True"
+                          CanUserAddRows="False"
+                          Margin="0,0,0,12"
+                          MinColumnWidth="90">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Substance A"
+                                            Binding="{Binding SubstanceA}"
+                                            Width="160"/>
+
+                        <DataGridTextColumn Header="Substance B"
+                                            Binding="{Binding SubstanceB}"
+                                            Width="160"/>
+
+                        <DataGridTemplateColumn Header="Severity"
+                                                Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border Background="{Binding Severity, Converter={StaticResource SeverityToBrushConverter}}"
+                                            CornerRadius="8"
+                                            Padding="8,3"
+                                            HorizontalAlignment="Center">
+                                        <TextBlock Text="{Binding Severity}"
+                                                   Foreground="White"
+                                                   FontWeight="Bold"
+                                                   FontSize="11"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+
+                        <DataGridTextColumn Header="Message"
+                                            Binding="{Binding Message}"
+                                            Width="260"/>
+
+                        <DataGridTextColumn Header="Source"
+                                            Binding="{Binding Source}"
+                                            Width="140"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <TextBlock Grid.Row="3"
+                           Text="Selected interaction details"
+                           FontSize="15"
+                           FontWeight="Bold"
+                           Margin="0,0,0,8"/>
+
+                <Border Grid.Row="4"
+                        Background="#F8FAFC"
+                        BorderBrush="#D6DEE8"
+                        BorderThickness="1"
+                        CornerRadius="10"
+                        Padding="10">
+
+                    <StackPanel>
+                        <TextBlock Text="Severity"
+                                   FontSize="12"
+                                   FontWeight="Bold"/>
+
+                        <TextBlock Text="{Binding SelectedInteraction.Severity}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,8"/>
+
+                        <TextBlock Text="Message"
+                                   FontSize="12"
+                                   FontWeight="Bold"/>
+
+                        <TextBlock Text="{Binding SelectedInteraction.Message}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,8"/>
+
+                        <TextBlock Text="Source"
+                                   FontSize="12"
+                                   FontWeight="Bold"/>
+
+                        <TextBlock Text="{Binding SelectedInteraction.Source}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,8"/>
+
+                        <TextBlock Text="Safety note: Brak znalezionej interakcji nie oznacza, że połączenie jest bezpieczne. Wynik wymaga klinicznej weryfikacji."
+                                   FontSize="11"
+                                   Foreground="#8A5A00"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>
