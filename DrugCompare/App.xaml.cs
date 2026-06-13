@@ -7,6 +7,7 @@ using System.Windows;
 using DrugCompare.Services.Application;
 using DrugCompare.Repositories;
 using DrugCompare.Repositories.Contracts;
+
 namespace DrugCompare;
 
 public partial class App : Application
@@ -34,12 +35,21 @@ public partial class App : Application
         services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
         services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
         services.AddSingleton<IAuditLogRepository, PostgresAuditLogRepository>();
+        services.AddSingleton<IDrugExplorerRepository, PostgresDrugExplorerRepository>();
+        services.AddSingleton<IPolishDrugRegistryService, PolishDrugRegistryService>();
+        services.AddSingleton<IPolishDrugRegistryRepository, PostgresPolishDrugRegistryRepository>();
 
         services.AddSingleton<PostgresDrugDataService>();
 
         services.AddSingleton<IAuditLogService, AuditLogService>();
 
+        services.AddSingleton<IDrugExplorerService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+        
         services.AddSingleton<IDrugLookupService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
+
+        services.AddSingleton<IDrugExplorerService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
         services.AddSingleton<ISubstanceLookupService>(sp =>
