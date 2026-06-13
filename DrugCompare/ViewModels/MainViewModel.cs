@@ -22,6 +22,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly IDrugExplorerService _drugExplorerService;
     private readonly IDataManagementService _dataManagementService;
     private readonly IPolishDrugRegistryService _polishDrugRegistryService;
+    private readonly IIcdCodeService _icdCodeService;
     private readonly InteractionAnalysisService _interactionAnalysisService;
     private string _drugNameInput = string.Empty;
     private string _manualSubstanceInput = string.Empty;
@@ -32,6 +33,7 @@ public sealed class MainViewModel : ObservableObject
     private AuditLogItem? _selectedAuditLog;
     private string _polishDrugRegistryQuery = "";
     private PolishDrugRegistryItem? _selectedPolishDrugRegistryItem;
+    private string _selectedIcdCategory = "All";
     private string _selectedAuditLogDetails = "Select audit log entry to inspect details.";
     private string _resultSummaryMessage = "No interaction check performed yet.";
     private string _statusMessage = "Ready.";
@@ -40,6 +42,8 @@ public sealed class MainViewModel : ObservableObject
     private bool _isBusy;
     private string _databaseStatusText = "Database status not loaded.";
     private string _drugExplorerQuery = "";
+    private string _icdSearchQuery = "";
+    private IcdCodeItem? _selectedIcdCode;
     private DrugExplorerResult? _selectedDrugExplorerResult;
     public ObservableCollection<InteractionHistoryItem> InteractionHistory { get; } = new();
     public AsyncRelayCommand ExportCurrentReportCommand { get; }
@@ -55,8 +59,10 @@ public sealed class MainViewModel : ObservableObject
     InteractionAnalysisService interactionAnalysisService,
     IAuditLogService auditLogService, 
     IDrugExplorerService drugExplorerService,
-    IPolishDrugRegistryService polishDrugRegistryService)
+    IPolishDrugRegistryService polishDrugRegistryService,
+    IIcdCodeService icdCodeService)
     {
+        _icdCodeService = icdCodeService;
         _drugLookupService = drugLookupService;
         _substanceLookupService = substanceLookupService;
         _interactionCheckerService = interactionCheckerService;
@@ -84,6 +90,7 @@ public sealed class MainViewModel : ObservableObject
         SearchPolishDrugRegistryCommand = new AsyncRelayCommand(SearchPolishDrugRegistryAsync);
         OpenSelectedChplCommand = new RelayCommand(OpenSelectedChpl, CanOpenSelectedChpl);
         OpenSelectedLeafletCommand = new RelayCommand(OpenSelectedLeaflet, CanOpenSelectedLeaflet);
+        SearchIcdCodesCommand = new AsyncRelayCommand(SearchIcdCodesAsync);
     }
     public string DatabaseStatusText
     {
@@ -100,6 +107,17 @@ public sealed class MainViewModel : ObservableObject
     {
         get => _ddinterImportSummary;
         set => SetProperty(ref _ddinterImportSummary, value);
+    }
+    public string IcdSearchQuery
+    {
+        get => _icdSearchQuery;
+        set => SetProperty(ref _icdSearchQuery, value);
+    }
+
+    public IcdCodeItem? SelectedIcdCode
+    {
+        get => _selectedIcdCode;
+        set => SetProperty(ref _selectedIcdCode, value);
     }
     public string DrugNameInput
     {
@@ -199,6 +217,12 @@ public sealed class MainViewModel : ObservableObject
     public ObservableCollection<InteractionResult> InteractionResults { get; } = new();
     public ObservableCollection<DataSourceVersionItem> RecentDataImports { get; } = new();
     public ObservableCollection<PolishDrugRegistryItem> PolishDrugRegistryResults { get; } = new();
+    public string SelectedIcdCategory
+    {
+        get => _selectedIcdCategory;
+        set => SetProperty(ref _selectedIcdCategory, value);
+    }
+
 
     public IAsyncRelayCommand SearchPolishDrugRegistryCommand { get; }
     public IRelayCommand OpenSelectedChplCommand { get; }
@@ -208,7 +232,9 @@ public sealed class MainViewModel : ObservableObject
     public IAsyncRelayCommand LoadHistoryCommand { get; }
     public IAsyncRelayCommand LoadAuditLogsCommand { get; }
     public IRelayCommand AcceptDetectedSubstanceCommand { get; }
+    public ObservableCollection<IcdCodeItem> IcdSearchResults { get; } = new();
 
+    public IAsyncRelayCommand SearchIcdCodesCommand { get; }
     public IRelayCommand AcceptAllDetectedSubstancesCommand { get; }
 
     public IAsyncRelayCommand AddManualSubstanceCommand { get; }
@@ -220,6 +246,33 @@ public sealed class MainViewModel : ObservableObject
     public IAsyncRelayCommand CheckInteractionsCommand { get; }
     public IAsyncRelayCommand LoadDatabaseStatusCommand { get; }
     public IAsyncRelayCommand LoadDataManagementCommand { get; }
+    public ObservableCollection<string> IcdCategories { get; } = new()
+{
+    "All",
+    "Choroby zakaźne i pasożytnicze",
+    "Nowotwory",
+    "Choroby krwi i narządów krwiotwórczych",
+    "Choroby układu odpornościowego",
+    "Choroby endokrynologiczne, żywieniowe lub metaboliczne",
+    "Zaburzenia psychiczne, behawioralne lub neurorozwojowe",
+    "Zaburzenia snu i czuwania",
+    "Choroby układu nerwowego",
+    "Choroby narządu wzroku",
+    "Choroby ucha lub wyrostka sutkowatego",
+    "Choroby układu krążenia",
+    "Choroby układu oddechowego",
+    "Choroby układu pokarmowego",
+    "Choroby skóry",
+    "Choroby układu mięśniowo-szkieletowego lub tkanki łącznej",
+    "Choroby układu moczowo-płciowego",
+    "Ciąża, poród lub połóg",
+    "Stany rozpoczynające się w okresie okołoporodowym",
+    "Wady rozwojowe",
+    "Objawy, oznaki lub wyniki kliniczne niesklasyfikowane gdzie indziej",
+    "Urazy, zatrucia lub inne następstwa przyczyn zewnętrznych",
+    "Zewnętrzne przyczyny zachorowania lub śmierci",
+    "Czynniki wpływające na stan zdrowia lub kontakt ze służbą zdrowia"
+};
     public async Task<DatabaseStatusResult> GetDatabaseStatusForStartupAsync()
     {
         return await _databaseStatusService.GetDatabaseStatusAsync();
@@ -299,7 +352,7 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Polish registry search failed: {ToUserFriendlyDatabaseError(ex)}";
+            StatusMessage = $"Polish registry search failed: {(ex)}";
         }
         finally
         {
@@ -873,5 +926,52 @@ public sealed class MainViewModel : ObservableObject
 
         StatusMessage = $"Accepted: {substance.Name}, DatabaseId: {substance.DatabaseId}, Source: {substance.Source}";
     }
-    
+    private async Task SearchIcdCodesAsync()
+    {
+        IcdSearchResults.Clear();
+        SelectedIcdCode = null;
+
+        if (string.IsNullOrWhiteSpace(IcdSearchQuery))
+        {
+            StatusMessage = "Enter ICD code or disease name.";
+            return;
+        }
+
+        IsBusy = true;
+        StatusMessage = "Searching ICD codes...";
+
+        try
+        {
+            var categoryFilter = SelectedIcdCategory == "All"
+            ? null
+            : SelectedIcdCategory;
+
+            var results = await _icdCodeService.SearchAsync(IcdSearchQuery, categoryFilter, 100);
+
+            foreach (var item in results)
+            {
+                IcdSearchResults.Add(item);
+            }
+
+            SelectedIcdCode = IcdSearchResults.FirstOrDefault();
+
+            StatusMessage = $"Found {IcdSearchResults.Count} ICD code(s).";
+
+            await _auditLogService.WriteAsync("IcdCodeSearched", new
+            {
+                Query = IcdSearchQuery.Trim(),
+                ResultCount = IcdSearchResults.Count,
+                Timestamp = DateTime.Now
+            });
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = $"ICD search failed: {(ex)}";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
 }

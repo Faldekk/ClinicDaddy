@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DrugCompare.Views"
-        Title="MedCompare - Interaction Checker"
+        Title="MedCompare"
         Width="1400"
         Height="760"
         MinWidth="1180"
@@ -12,70 +12,112 @@
 
     <DockPanel Background="#F4F7FB">
 
+        <!-- Top menu: auxiliary/admin tools only -->
         <Menu DockPanel.Dock="Top"
               Background="White"
               FontSize="13">
-    
+
             <MenuItem Header="_View">
                 <MenuItem Header="History"
-                          Click="OpenHistory_Click"/>
+                          Click="OpenHistory_Click" />
             </MenuItem>
-            <MenuItem Header="_Modules">
-                <MenuItem Header="Drug Explorer"
-              Click="OpenDrugExplorer_Click"/>
 
-                <MenuItem Header="Polish Drug Registry"
-              Click="OpenPolishDrugRegistry_Click"/>
-            </MenuItem>
             <MenuItem Header="_Data">
                 <MenuItem Header="Database Status"
-                          Click="OpenDatabaseStatus_Click"/>
+                          Click="OpenDatabaseStatus_Click" />
 
                 <MenuItem Header="Data Management"
-                          Click="OpenDataManagement_Click"/>
+                          Click="OpenDataManagement_Click" />
             </MenuItem>
 
             <MenuItem Header="_Tools">
                 <MenuItem Header="Audit Log"
-                          Click="OpenAuditLog_Click"/>
+                          Click="OpenAuditLog_Click" />
 
-                <Separator/>
+                <Separator />
 
                 <MenuItem Header="Settings"
-                          Click="OpenSettings_Click"/>
+                          Click="OpenSettings_Click" />
             </MenuItem>
 
             <MenuItem Header="_Help">
                 <MenuItem Header="About"
-                          Click="OpenAbout_Click"/>
+                          Click="OpenAbout_Click" />
             </MenuItem>
-          
         </Menu>
 
+        <!-- App header -->
         <Border DockPanel.Dock="Top"
                 Padding="14,8"
-                Background="#FFFFFF"
+                Background="White"
                 BorderBrush="#D5E0EE"
                 BorderThickness="0,0,0,1">
 
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="Interaction Checker"
+            <DockPanel LastChildFill="True">
+
+                <StackPanel DockPanel.Dock="Left"
+                            Orientation="Vertical">
+                    <TextBlock Text="MedCompare"
                                FontSize="20"
-                               FontWeight="SemiBold"/>
-                    
+                               FontWeight="SemiBold" />
 
-                    <TextBlock Text="Check known active substance interactions using the local database."
+                    <TextBlock Text="Local medical reference and interaction checking prototype."
                                FontSize="12"
-                               Opacity="0.7"/>
+                               Opacity="0.7"
+                               Margin="0,2,0,0" />
                 </StackPanel>
-                
 
-                
+                <Border DockPanel.Dock="Right"
+                        Padding="14,5"
+                        CornerRadius="12"
+                        Background="#EAF4FF"
+                        BorderBrush="#8EC5FF"
+                        BorderThickness="1"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right">
+
+                    <TextBlock Text="LOCAL MODE"
+                               FontSize="12"
+                               FontWeight="Bold"
+                               Foreground="#1E5D9F" />
+                </Border>
+
             </DockPanel>
         </Border>
 
-        <views:InteractionCheckView Margin="8"/>
+        <!-- Main modules -->
+        <TabControl Margin="8"
+                    BorderThickness="0"
+                    Background="Transparent">
+
+            <TabControl.Resources>
+                <Style TargetType="TabItem">
+                    <Setter Property="Padding"
+                            Value="18,8" />
+                    <Setter Property="FontSize"
+                            Value="14" />
+                    <Setter Property="FontWeight"
+                            Value="SemiBold" />
+                </Style>
+            </TabControl.Resources>
+
+            <TabItem Header="Interaction Checker">
+                <views:InteractionCheckView />
+            </TabItem>
+
+            <TabItem Header="Drug Explorer">
+                <views:DrugExplorerView />
+            </TabItem>
+
+            <TabItem Header="Polish Drug Registry">
+                <views:PolishDrugRegistryView />
+            </TabItem>
+            
+            <TabItem Header="ICD Looker">
+                <views:IcdLookerView />
+            </TabItem>
+
+        </TabControl>
 
     </DockPanel>
 </Window>

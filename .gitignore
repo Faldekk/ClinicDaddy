@@ -11,6 +11,7 @@ x86/
 [Bb]uild/
 [Ll]og/
 
+*.exe
 *.user
 *.suo
 *.userosscache

@@ -38,6 +38,8 @@ public partial class App : Application
         services.AddSingleton<IDrugExplorerRepository, PostgresDrugExplorerRepository>();
         services.AddSingleton<IPolishDrugRegistryService, PolishDrugRegistryService>();
         services.AddSingleton<IPolishDrugRegistryRepository, PostgresPolishDrugRegistryRepository>();
+        services.AddSingleton<IIcdCodeRepository, PostgresIcdCodeRepository>();
+        services.AddSingleton<IIcdCodeService, IcdCodeService>();
 
         services.AddSingleton<PostgresDrugDataService>();
 
