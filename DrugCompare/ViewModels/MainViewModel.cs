@@ -500,13 +500,13 @@ public sealed class MainViewModel : ObservableObject
             {
                 StatusMessage = "Drug not found in local dictionary. Add active substance manually.";
 
-                await _auditLogService.WriteAsync("DrugSearched", new
-                {
-                    DrugName = searchedDrugName,
-                    Found = false,
-                    DetectedSubstanceCount = 0,
-                    Timestamp = DateTime.Now
-                });
+                //await _auditLogService.WriteAsync("DrugSearched", new
+                //{
+                //    DrugName = searchedDrugName,
+                //    Found = false,
+                //    DetectedSubstanceCount = 0,
+                //    Timestamp = DateTime.Now
+                //});
 
                 return;
             }
@@ -521,21 +521,21 @@ public sealed class MainViewModel : ObservableObject
             $"IDs: {string.Join(", ", result.ActiveSubstances.Select(x => $"{x.Name}:{x.DatabaseId?.ToString() ?? "NULL"}"))}";
             //StatusMessage = $"Found {result.ActiveSubstances.Count} active substance(s) for {result.DrugName}.";
 
-            await _auditLogService.WriteAsync("DrugSearched", new
-            {
-                DrugName = searchedDrugName,
-                Found = true,
-                ResultDrugName = result.DrugName,
-                DetectedSubstanceCount = result.ActiveSubstances.Count,
-                DetectedSubstances = result.ActiveSubstances.Select(x => new
-                {
-                    x.Name,
-                    x.DatabaseId,
-                    x.DDInterId,
-                    x.Source
-                }).ToList(),
-                Timestamp = DateTime.Now
-            });
+            //await _auditLogService.WriteAsync("DrugSearched", new
+            //{
+            //    DrugName = searchedDrugName,
+            //    Found = true,
+            //    ResultDrugName = result.DrugName,
+            //    DetectedSubstanceCount = result.ActiveSubstances.Count,
+            //    DetectedSubstances = result.ActiveSubstances.Select(x => new
+            //    {
+            //        x.Name,
+            //        x.DatabaseId,
+            //        x.DDInterId,
+            //        x.Source
+            //    }).ToList(),
+            //    Timestamp = DateTime.Now
+            //});
         }
         catch (Exception ex)
         {
@@ -921,24 +921,42 @@ public sealed class MainViewModel : ObservableObject
 
         try
         {
-            //Debug part
-            StatusMessage =
-            "Checking IDs: " +
-            string.Join(", ", AcceptedSubstances.Select(x => $"{x.Name}:{x.DatabaseId?.ToString() ?? "NULL"}"));
+            var accepted = AcceptedSubstances.ToList();
 
-            var analysis = await _interactionAnalysisService.AnalyzeAsync(
-                AcceptedSubstances.ToList());
+            System.Diagnostics.Debug.WriteLine(
+                "UI CHECK INPUT: " +
+                string.Join(", ", accepted.Select(x =>
+                    $"{x.Name}:{x.DatabaseId?.ToString() ?? "NULL"}:{x.DDInterId ?? "NO_DDINTER"}")));
 
-            foreach (var interaction in analysis.Interactions)
+            var interactions = await _interactionCheckerService.CheckInteractionsAsync(accepted);
+
+            System.Diagnostics.Debug.WriteLine($"UI DIRECT INTERACTIONS COUNT: {interactions.Count}");
+
+            foreach (var interaction in interactions)
             {
                 InteractionResults.Add(interaction);
             }
 
             SelectedInteraction = InteractionResults.FirstOrDefault();
 
-            ResultSummaryMessage = analysis.SummaryMessage;
+            if (InteractionResults.Count == 0)
+            {
+                ResultSummaryMessage =
+                    "No known interaction was found in the local database. Missing interaction data does not mean that the combination is safe.";
+            }
+            else
+            {
+                var highestSeverity = InteractionResults
+                    .OrderByDescending(x => GetSeverityScore(x.Severity))
+                    .First()
+                    .Severity;
 
-            StatusMessage = analysis.SummaryMessage;
+                ResultSummaryMessage =
+                    $"Found {InteractionResults.Count} interaction(s). Highest severity: {highestSeverity}.";
+            }
+
+            StatusMessage =
+                $"Direct checker count: {interactions.Count} | UI count: {InteractionResults.Count}";
 
             await _auditLogService.WriteAsync("InteractionChecked", new
             {
@@ -948,8 +966,13 @@ public sealed class MainViewModel : ObservableObject
                     x.DatabaseId,
                     x.DDInterId
                 }).ToList(),
-                InteractionCount = analysis.Interactions.Count,
-                analysis.HighestSeverity,
+                InteractionCount = InteractionResults.Count,
+                HighestSeverity = InteractionResults.Count == 0
+                    ? "None"
+                    : InteractionResults
+                        .OrderByDescending(x => GetSeverityScore(x.Severity))
+                        .First()
+                        .Severity,
                 Timestamp = DateTime.Now
             });
 
@@ -957,7 +980,10 @@ public sealed class MainViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            ResultSummaryMessage = "Interaction check failed.";
             StatusMessage = $"Interaction check failed: {ex.Message}";
+
+            System.Diagnostics.Debug.WriteLine($"INTERACTION CHECK ERROR: {ex}");
         }
         finally
         {

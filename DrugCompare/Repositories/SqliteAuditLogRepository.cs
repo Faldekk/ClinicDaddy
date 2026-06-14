@@ -16,7 +16,8 @@ public class SqliteAuditLogRepository : IAuditLogRepository
 
     public async Task WriteAsync(string eventType, string? detailsJson = null)
     {
-        const string sql = """
+        
+            const string sql = """
             INSERT INTO audit_logs (
                 event_type,
                 details_json,
@@ -28,6 +29,7 @@ public class SqliteAuditLogRepository : IAuditLogRepository
                 datetime('now')
             );
             """;
+           
 
         await using var connection = _connectionFactory.CreateConnection();
         await connection.OpenAsync();

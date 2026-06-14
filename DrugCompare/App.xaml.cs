@@ -109,7 +109,7 @@ public partial class App : Application
             services.AddSingleton<IIcdCodeRepository, SqliteIcdCodeRepository>();
             services.AddSingleton<IPolishDrugRegistryRepository, SqlitePolishDrugRegistryRepository>();
 
-            services.AddSingleton<IDatabaseStatusService, DisabledDatabaseStatusService>();
+            services.AddSingleton<IDatabaseStatusService, SqliteDatabaseStatusService>();
             services.AddSingleton<IDataManagementService, DisabledDataManagementService>();
         }
         else

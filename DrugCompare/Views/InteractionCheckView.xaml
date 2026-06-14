@@ -1,62 +1,166 @@
-﻿    <UserControl x:Class="DrugCompare.Views.InteractionCheckView"
+﻿ <UserControl x:Class="DrugCompare.Views.InteractionCheckView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:converters="clr-namespace:DrugCompare.Converters"
-             >
-    
+             xmlns:converters="clr-namespace:DrugCompare.Converters">
+
     <UserControl.Resources>
         <converters:SeverityToBrushConverter x:Key="SeverityToBrushConverter"/>
+
+        <!-- Colors -->
+        <SolidColorBrush x:Key="PageBackgroundBrush" Color="#F4F7FB"/>
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF"/>
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#D7E2EF"/>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB"/>
+        <SolidColorBrush x:Key="PrimaryDarkBrush" Color="#1D4ED8"/>
+        <SolidColorBrush x:Key="DangerBrush" Color="#DC2626"/>
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#64748B"/>
+        <SolidColorBrush x:Key="SoftBlueBrush" Color="#EFF6FF"/>
+        <SolidColorBrush x:Key="SoftAmberBrush" Color="#FFF7E6"/>
+        <SolidColorBrush x:Key="AmberTextBrush" Color="#8A5A00"/>
+
+        <!-- Card style -->
+        <Style x:Key="CardBorderStyle" TargetType="Border">
+            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="16"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="SnapsToDevicePixels" Value="True"/>
+        </Style>
+
+        <!-- Section heading -->
+        <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <Style x:Key="LabelStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#334155"/>
+            <Setter Property="Margin" Value="0,0,0,4"/>
+        </Style>
+
+        <Style x:Key="MutedTextStyle" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}"/>
+            <Setter Property="TextWrapping" Value="Wrap"/>
+        </Style>
+
+        <!-- TextBox -->
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,0,0,10"/>
+        </Style>
+
+        <!-- Buttons -->
+        <Style x:Key="BaseButtonStyle" TargetType="Button">
+            <Setter Property="Height" Value="36"/>
+            <Setter Property="Padding" Value="12,4"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#CBD5E1"/>
+            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Foreground" Value="#0F172A"/>
+        </Style>
+
+        <Style x:Key="PrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+            <Setter Property="Background" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource PrimaryBrush}"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Height" Value="44"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+
+        <Style x:Key="DangerButtonStyle" TargetType="Button" BasedOn="{StaticResource BaseButtonStyle}">
+            <Setter Property="Foreground" Value="{StaticResource DangerBrush}"/>
+        </Style>
+
+        <!-- ListBox -->
+        <Style TargetType="ListBox">
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="#FFFFFF"/>
+            <Setter Property="Padding" Value="4"/>
+        </Style>
+
+        <Style TargetType="ListBoxItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="0"/>
+            <Setter Property="Margin" Value="0"/>
+        </Style>
+
+        <!-- DataGrid -->
+        <Style TargetType="DataGrid">
+            <Setter Property="BorderBrush" Value="#E2E8F0"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="RowBackground" Value="White"/>
+            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="GridLinesVisibility" Value="None"/>
+            <Setter Property="HeadersVisibility" Value="Column"/>
+            <Setter Property="CanUserAddRows" Value="False"/>
+            <Setter Property="CanUserDeleteRows" Value="False"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="SelectionMode" Value="Single"/>
+            <Setter Property="SelectionUnit" Value="FullRow"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="RowHeight" Value="34"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#EFF6FF"/>
+            <Setter Property="Foreground" Value="#1E3A8A"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#DBEAFE"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+        </Style>
     </UserControl.Resources>
 
-
-
-    <Grid Margin="0,12,0,0">
-            <Grid.ColumnDefinitions>
-           
-                <ColumnDefinition Width="360"/>
-                <ColumnDefinition Width="380"/>
-                <ColumnDefinition Width="*"/>
-            
-             </Grid.ColumnDefinitions>
-      
+    <Grid Background="{StaticResource PageBackgroundBrush}" Margin="0,12,0,0">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="360"/>
+            <ColumnDefinition Width="390"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
 
         <!-- LEFT PANEL -->
         <Border Grid.Column="0"
-                Background="White"
-                CornerRadius="12"
-                Padding="14"
-                BorderBrush="#D6DEE8"
-                BorderThickness="1"
+                Style="{StaticResource CardBorderStyle}"
                 Margin="0,0,8,0">
 
             <Grid>
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
                 <TextBlock Grid.Row="0"
                            Text="1. Drug lookup"
-                           FontSize="17"
-                           FontWeight="Bold"
-                           Margin="0,0,0,10"/>
+                           Style="{StaticResource SectionTitleStyle}"/>
 
                 <StackPanel Grid.Row="1">
                     <TextBlock Text="Drug name"
-                               FontSize="12"
-                               FontWeight="SemiBold"/>
+                               Style="{StaticResource LabelStyle}"/>
 
-                    <TextBox Text="{Binding DrugNameInput, UpdateSourceTrigger=PropertyChanged}"
-                             Height="32"
-                             Margin="0,4,0,8"/>
+                    <TextBox Text="{Binding DrugNameInput, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <Button Content="Find drug"
                             Command="{Binding FindDrugCommand}"
-                            Height="34"
+                            Style="{StaticResource BaseButtonStyle}"
                             Margin="0,0,0,12"/>
                 </StackPanel>
 
@@ -66,37 +170,51 @@
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock Grid.Row="0"
-                               Text="Detected active substances"
-                               FontSize="12"
-                               FontWeight="SemiBold"
-                               Margin="0,0,0,5"/>
+                    <DockPanel Grid.Row="0" Margin="0,0,0,6">
+                        <TextBlock Text="Detected active substances"
+                                   Style="{StaticResource LabelStyle}"
+                                   DockPanel.Dock="Left"/>
+
+                        <TextBlock Text="{Binding DetectedSubstances.Count, StringFormat=Count: {0}}"
+                                   Foreground="{StaticResource MutedTextBrush}"
+                                   FontSize="11"
+                                   HorizontalAlignment="Right"/>
+                    </DockPanel>
 
                     <ListBox Grid.Row="1"
-                        ItemsSource="{Binding DetectedSubstances}"
-                        SelectedItem="{Binding SelectedDetectedSubstance}"
-                        ScrollViewer.VerticalScrollBarVisibility="Auto"
-                        ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                             ItemsSource="{Binding DetectedSubstances}"
+                             SelectedItem="{Binding SelectedDetectedSubstance}"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             HorizontalContentAlignment="Stretch">
+
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <Border Padding="6"
-                                        Margin="0,0,0,4"
+                                <Border Margin="0,0,0,6"
+                                        Padding="10"
+                                        CornerRadius="10"
+                                        Background="#F8FAFC"
                                         BorderBrush="#E2E8F0"
-                                        BorderThickness="0,0,0,1">
+                                        BorderThickness="1">
                                     <StackPanel>
                                         <TextBlock Text="{Binding Name}"
-                                                   FontWeight="SemiBold"
-                                                   FontSize="12"
+                                                   FontWeight="Bold"
+                                                   FontSize="13"
+                                                   Foreground="#0F172A"
                                                    TextWrapping="Wrap"/>
 
-                                        <TextBlock Text="{Binding DDInterId}"
-                                                   Foreground="#607080"
-                                                   FontSize="10"
-                                                   TextWrapping="Wrap"/>
+                                        <TextBlock Text="{Binding DatabaseId, StringFormat=DB ID: {0}}"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="11"
+                                                   Margin="0,4,0,0"/>
+
+                                        <TextBlock Text="{Binding DDInterId, StringFormat=DDInter: {0}}"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="11"/>
 
                                         <TextBlock Text="{Binding Source}"
-                                                   Foreground="#607080"
-                                                   FontSize="10"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="11"
                                                    TextWrapping="Wrap"/>
                                     </StackPanel>
                                 </Border>
@@ -105,191 +223,189 @@
                     </ListBox>
                 </Grid>
 
-                <Grid Grid.Row="3"
-                      Margin="0,10,0,12">
+                <Grid Grid.Row="3" Margin="0,12,0,12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="8"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <Button Grid.Column="0"
                             Content="Accept selected"
                             Command="{Binding AcceptDetectedSubstanceCommand}"
-                            Height="34"
-                            Margin="0,0,5,0"/>
+                            Style="{StaticResource BaseButtonStyle}"/>
 
-                    <Button Grid.Column="1"
+                    <Button Grid.Column="2"
                             Content="Accept all"
                             Command="{Binding AcceptAllDetectedSubstancesCommand}"
-                            Height="34"
-                            Margin="5,0,0,0"/>
+                            Style="{StaticResource BaseButtonStyle}"/>
                 </Grid>
 
-                <Separator Grid.Row="4"
-                           Margin="0,0,0,12"/>
+                <Separator Grid.Row="4" Margin="0,0,0,14"/>
 
                 <StackPanel Grid.Row="5">
                     <TextBlock Text="2. Manual active substance"
-                               FontSize="17"
-                               FontWeight="Bold"
-                               Margin="0,0,0,10"/>
+                               Style="{StaticResource SectionTitleStyle}"/>
 
                     <TextBlock Text="Active substance name"
-                               FontSize="12"
-                               FontWeight="SemiBold"/>
+                               Style="{StaticResource LabelStyle}"/>
 
-                    <TextBox Text="{Binding ManualSubstanceInput, UpdateSourceTrigger=PropertyChanged}"
-                             Height="32"
-                             Margin="0,4,0,8"/>
+                    <TextBox Text="{Binding ManualSubstanceInput, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <Button Content="Add active substance"
                             Command="{Binding AddManualSubstanceCommand}"
-                            Height="34"/>
+                            Style="{StaticResource BaseButtonStyle}"/>
 
-                    <TextBlock Text="Tip: for DDInter tests, paste the exact active substance name from the database."
-                               FontSize="11"
-                               Foreground="#607080"
-                               TextWrapping="Wrap"
-                               Margin="0,10,0,0"/>
+                    <Border Background="{StaticResource SoftBlueBrush}"
+                            BorderBrush="#BFDBFE"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Padding="8"
+                            Margin="0,10,0,0">
+                        <TextBlock Text="Tip: for DDInter tests, paste the exact active substance name from the database."
+                                   Style="{StaticResource MutedTextStyle}"/>
+                    </Border>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- MIDDLE PANEL -->
         <Border Grid.Column="1"
-        Margin="8"
-        Padding="18"
-        CornerRadius="12"
-        BorderBrush="#D5E0EE"
-        BorderThickness="1"
-        Background="White"
-        HorizontalAlignment="Stretch"
-        >
+                Style="{StaticResource CardBorderStyle}"
+                Margin="8,0,8,0">
 
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="12"/>
                     <RowDefinition Height="*"/>
-                    <RowDefinition Height="12"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <TextBlock Grid.Row="0"
-                   Text="3. Accepted active substances"
-                   FontSize="22"
-                   FontWeight="Bold"/>
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock Text="3. Accepted active substances"
+                               Style="{StaticResource SectionTitleStyle}"
+                               DockPanel.Dock="Left"/>
 
-                <ListBox Grid.Row="2"
-         ItemsSource="{Binding AcceptedSubstances}"
-         SelectedItem="{Binding SelectedAcceptedSubstance}"
-         ScrollViewer.VerticalScrollBarVisibility="Auto"
-         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-         HorizontalContentAlignment="Stretch">
+                    <TextBlock Text="{Binding AcceptedSubstances.Count, StringFormat=Count: {0}}"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="11"
+                               HorizontalAlignment="Right"/>
+                </DockPanel>
 
-                    <ListBox.ItemContainerStyle>
-                        <Style TargetType="ListBoxItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-                            <Setter Property="Padding" Value="0"/>
-                            <Setter Property="Margin" Value="0"/>
-                        </Style>
-                    </ListBox.ItemContainerStyle>
+                <ListBox Grid.Row="1"
+                         ItemsSource="{Binding AcceptedSubstances}"
+                         SelectedItem="{Binding SelectedAcceptedSubstance}"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         HorizontalContentAlignment="Stretch">
 
                     <ListBox.ItemTemplate>
                         <DataTemplate>
                             <Border Margin="0,0,0,8"
-                    Padding="10"
-                    CornerRadius="8"
-                    BorderBrush="#D5E0EE"
-                    BorderThickness="1"
-                    HorizontalAlignment="Stretch"
-                    VerticalAlignment="Top"
-                    MaxWidth="330">
-
+                                    Padding="12"
+                                    CornerRadius="10"
+                                    BorderBrush="#D7E2EF"
+                                    BorderThickness="1"
+                                    Background="#FFFFFF">
                                 <StackPanel>
                                     <TextBlock Text="{Binding Name}"
-                               FontWeight="Bold"
-                               TextWrapping="Wrap"
-                               TextTrimming="CharacterEllipsis"
-                               MaxWidth="300"/>
+                                               FontWeight="Bold"
+                                               FontSize="13"
+                                               Foreground="#0F172A"
+                                               TextWrapping="Wrap"/>
 
-                                    <TextBlock Text="{Binding DatabaseId, StringFormat=DB ID: {0}}"
-                               Foreground="#5B6B82"
-                               FontSize="12"/>
+                                    <Grid Margin="0,6,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0"
+                                                   Text="DB ID:"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="11"
+                                                   Margin="0,0,6,0"/>
+
+                                        <TextBlock Grid.Column="1"
+                                                   Text="{Binding DatabaseId}"
+                                                   Foreground="{StaticResource MutedTextBrush}"
+                                                   FontSize="11"/>
+                                    </Grid>
 
                                     <TextBlock Text="{Binding DDInterId, StringFormat=DDInter: {0}}"
-                               Foreground="#5B6B82"
-                               FontSize="12"/>
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="11"/>
 
                                     <TextBlock Text="{Binding Source}"
-                               Foreground="#5B6B82"
-                               FontSize="12"/>
+                                               Foreground="{StaticResource MutedTextBrush}"
+                                               FontSize="11"
+                                               TextWrapping="Wrap"/>
                                 </StackPanel>
                             </Border>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
 
-                <StackPanel Grid.Row="4">
-                    <Button Content="Remove selected substance"
-                    Height="42"
-                    Margin="0,0,0,8"
-                    Command="{Binding RemoveAcceptedSubstanceCommand}"/>
+                <StackPanel Grid.Row="2" Margin="0,12,0,0">
                     <Button Content="Check interactions"
-                    Height="48"
-                    Margin="0,0,0,8"
-                    FontWeight="Bold"
-                    Background="#2878BD"
-                    Foreground="White"
-                    Command="{Binding CheckInteractionsCommand}"/>
+                            Command="{Binding CheckInteractionsCommand}"
+                            Style="{StaticResource PrimaryButtonStyle}"
+                            Margin="0,0,0,8"/>
+
+                    <Button Content="Remove selected substance"
+                            Command="{Binding RemoveAcceptedSubstanceCommand}"
+                            Style="{StaticResource DangerButtonStyle}"
+                            Margin="0,0,0,8"/>
 
                     <Button Content="Export current report"
-                    Height="42"
-                    Margin="0,0,0,8"
-                    Command="{Binding ExportCurrentReportCommand}"/>
+                            Command="{Binding ExportCurrentReportCommand}"
+                            Style="{StaticResource BaseButtonStyle}"
+                            Margin="0,0,0,8"/>
 
                     <Button Content="Clear case"
-                    Height="42"
-                    Command="{Binding ClearCaseCommand}"/>
+                            Command="{Binding ClearCaseCommand}"
+                            Style="{StaticResource BaseButtonStyle}"/>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- RIGHT PANEL -->
         <Border Grid.Column="2"
-                Background="White"
-                CornerRadius="12"
-                Padding="14"
-                BorderBrush="#D6DEE8"
-                BorderThickness="1"
+                Style="{StaticResource CardBorderStyle}"
                 Margin="8,0,0,0">
 
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="340"/>
+                    <RowDefinition Height="330"/>
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
-           
 
-                <TextBlock Grid.Row="0"
-                           Text="4. Interaction results"
-                           FontSize="17"
-                           FontWeight="Bold"
-                           Margin="0,0,0,10"/>
+                <DockPanel Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock Text="4. Interaction results"
+                               Style="{StaticResource SectionTitleStyle}"
+                               DockPanel.Dock="Left"/>
+
+                    <TextBlock Text="{Binding InteractionResults.Count, StringFormat=Count: {0}}"
+                               Foreground="{StaticResource MutedTextBrush}"
+                               FontSize="11"
+                               HorizontalAlignment="Right"/>
+                </DockPanel>
 
                 <Border Grid.Row="1"
-                        Background="#FFF7E6"
+                        Background="{StaticResource SoftAmberBrush}"
                         BorderBrush="#F2C879"
                         BorderThickness="1"
-                        CornerRadius="8"
+                        CornerRadius="10"
                         Padding="10"
                         Margin="0,0,0,10">
                     <TextBlock Text="{Binding ResultSummaryMessage}"
                                FontSize="12"
-                               Foreground="#8A5A00"
+                               Foreground="{StaticResource AmberTextBrush}"
+                               FontWeight="SemiBold"
                                TextWrapping="Wrap"/>
                 </Border>
 
@@ -298,43 +414,52 @@
                           SelectedItem="{Binding SelectedInteraction}"
                           AutoGenerateColumns="False"
                           IsReadOnly="True"
-                          CanUserAddRows="False"
-                          HorizontalScrollBarVisibility="Auto"
-                          Margin="0,0,0,12"
-                          MinColumnWidth="90">
+                          Margin="0,0,0,12">
+
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="Substance A"
                                             Binding="{Binding SubstanceA}"
-                                            Width="160"/>
+                                            Width="150"/>
 
                         <DataGridTextColumn Header="Substance B"
                                             Binding="{Binding SubstanceB}"
-                                            Width="160"/>
+                                            Width="150"/>
 
-                        <DataGridTemplateColumn Header="Severity"
-                                                Width="120">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border Background="{Binding Severity, Converter={StaticResource SeverityToBrushConverter}}"
-                                            CornerRadius="8"
-                                            Padding="8,3"
-                                            HorizontalAlignment="Center">
-                                        <TextBlock Text="{Binding Severity}"
-                                                   Foreground="White"
-                                                   FontWeight="Bold"
-                                                   FontSize="11"/>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Severity"
+                                            Binding="{Binding Severity}"
+                                            Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="Foreground" Value="{Binding Severity, Converter={StaticResource SeverityToBrushConverter}}"/>
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Padding" Value="6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <DataGridTextColumn Header="Message"
                                             Binding="{Binding Message}"
-                                            Width="260"/>
+                                            Width="*">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="Padding" Value="6,0"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
 
                         <DataGridTextColumn Header="Source"
                                             Binding="{Binding Source}"
-                                            Width="140"/>
+                                            Width="190">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextWrapping" Value="Wrap"/>
+                                    <Setter Property="Padding" Value="6,0"/>
+                                    <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
                     </DataGrid.Columns>
                 </DataGrid>
 
@@ -342,48 +467,57 @@
                            Text="Selected interaction details"
                            FontSize="15"
                            FontWeight="Bold"
+                           Foreground="#0F172A"
                            Margin="0,0,0,8"/>
 
                 <Border Grid.Row="4"
                         Background="#F8FAFC"
                         BorderBrush="#D6DEE8"
                         BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="10">
+                        CornerRadius="12"
+                        Padding="12">
 
-                    <StackPanel>
-                        <TextBlock Text="Severity"
-                                   FontSize="12"
-                                   FontWeight="Bold"/>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel>
+                            <TextBlock Text="Severity"
+                                       Style="{StaticResource LabelStyle}"/>
 
-                        <TextBlock Text="{Binding SelectedInteraction.Severity}"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Margin="0,2,0,8"/>
+                            <TextBlock Text="{Binding SelectedInteraction.Severity}"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="{Binding SelectedInteraction.Severity, Converter={StaticResource SeverityToBrushConverter}}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Message"
-                                   FontSize="12"
-                                   FontWeight="Bold"/>
+                            <TextBlock Text="Message"
+                                       Style="{StaticResource LabelStyle}"/>
 
-                        <TextBlock Text="{Binding SelectedInteraction.Message}"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Margin="0,2,0,8"/>
+                            <TextBlock Text="{Binding SelectedInteraction.Message}"
+                                       FontSize="12"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,10"/>
 
-                        <TextBlock Text="Source"
-                                   FontSize="12"
-                                   FontWeight="Bold"/>
+                            <TextBlock Text="Source"
+                                       Style="{StaticResource LabelStyle}"/>
 
-                        <TextBlock Text="{Binding SelectedInteraction.Source}"
-                                   FontSize="12"
-                                   TextWrapping="Wrap"
-                                   Margin="0,2,0,8"/>
+                            <TextBlock Text="{Binding SelectedInteraction.Source}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource MutedTextBrush}"
+                                       TextWrapping="Wrap"
+                                       Margin="0,0,0,12"/>
 
-                        <TextBlock Text="Safety note: Brak znalezionej interakcji nie oznacza, że połączenie jest bezpieczne. Wynik wymaga klinicznej weryfikacji."
-                                   FontSize="11"
-                                   Foreground="#8A5A00"
-                                   TextWrapping="Wrap"/>
-                    </StackPanel>
+                            <Border Background="{StaticResource SoftAmberBrush}"
+                                    BorderBrush="#F2C879"
+                                    BorderThickness="1"
+                                    CornerRadius="8"
+                                    Padding="10">
+                                <TextBlock Text="Safety note: Brak znalezionej interakcji nie oznacza, że połączenie jest bezpieczne. Wynik wymaga klinicznej weryfikacji."
+                                           FontSize="11"
+                                           Foreground="{StaticResource AmberTextBrush}"
+                                           TextWrapping="Wrap"/>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Border>
             </Grid>
         </Border>
