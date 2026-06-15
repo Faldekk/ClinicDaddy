@@ -1,17 +1,18 @@
-﻿using DrugCompare.Services;
-using DrugCompare.ViewModels;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using DrugCompare.Services.Contracts;
-using System.Windows;
-using DrugCompare.Services.Application;
+﻿using DrugCompare.Database;
 using DrugCompare.Repositories;
 using DrugCompare.Repositories.Contracts;
-using DrugCompare.Database;
-using DrugCompare.ViewModels.Interaction;
-using DrugCompare.ViewModels.ICD;
+using DrugCompare.Services;
+using DrugCompare.Services.Application;
+using DrugCompare.Services.Contracts;
+using DrugCompare.ViewModels;
 using DrugCompare.ViewModels.DrugExplorer;
-
+using DrugCompare.ViewModels.ICD;
+using DrugCompare.ViewModels.Interaction;
+using DrugCompare.ViewModels.PolishRegistry;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.IO;
+using System.Windows;
 
 namespace DrugCompare;
 
@@ -19,73 +20,77 @@ public partial class App : Application
 {
     private ServiceProvider? _serviceProvider;
 
-    protected override async void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
 
-        var configuration = new ConfigurationBuilder()
-            .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-            .Build();
-
         var services = new ServiceCollection();
 
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(AppContext.BaseDirectory)
+            .AddJsonFile(
+                "appsettings.json",
+                optional: false,
+                reloadOnChange: true)
+            .Build();
+
         services.AddSingleton<IConfiguration>(configuration);
+
+        RegisterDatabase(configuration, services);
+        RegisterApplicationServices(services);
+        RegisterViewModels(services);
+        RegisterViews(services);
+
+        _serviceProvider = services.BuildServiceProvider();
+
+        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+        mainWindow.Show();
+    }
+
+    protected override void OnExit(ExitEventArgs e)
+    {
+        _serviceProvider?.Dispose();
+        base.OnExit(e);
+    }
+
+    private static void RegisterDatabase(
+        IConfiguration configuration,
+        IServiceCollection services)
+    {
+        var provider = configuration["Database:Provider"] ?? "SQLite";
+
+        if (string.Equals(provider, "SQLite", StringComparison.OrdinalIgnoreCase))
+        {
+            RegisterSqliteServices(services);
+            return;
+        }
+
+        throw new InvalidOperationException(
+            $"Unsupported database provider: {provider}. Current portable version supports SQLite.");
+    }
+
+    private static void RegisterSqliteServices(IServiceCollection services)
+    {
         services.AddSingleton<SqliteConnectionFactory>();
 
-        var databaseProvider = configuration["Database:Provider"];
-        var useSqlite = string.Equals(databaseProvider, "SQLite", StringComparison.OrdinalIgnoreCase);
+        services.AddSingleton<IDrugRepository, SqliteDrugRepository>();
+        services.AddSingleton<ISubstanceRepository, SqliteSubstanceRepository>();
+        services.AddSingleton<IInteractionRepository, SqliteInteractionRepository>();
+        services.AddSingleton<IDrugExplorerRepository, SqliteDrugExplorerRepository>();
 
-        if (useSqlite)
-        {
-            services.AddSingleton<SqliteConnectionFactory>();
+        services.AddSingleton<IPolishDrugRegistryRepository, SqlitePolishDrugRegistryRepository>();
+        services.AddSingleton<IIcdCodeRepository, SqliteIcdCodeRepository>();
+        services.AddSingleton<IAuditLogRepository, SqliteAuditLogRepository>();
 
-            services.AddSingleton<IIcdCodeRepository, SqliteIcdCodeRepository>();
-            services.AddSingleton<IPolishDrugRegistryRepository, SqlitePolishDrugRegistryRepository>();
-            services.AddSingleton<IAuditLogRepository, SqliteAuditLogRepository>();
-            services.AddSingleton<IInteractionRepository, SqliteInteractionRepository>();
+        services.AddSingleton<IDatabaseStatusService, SqliteDatabaseStatusService>();
+        services.AddSingleton<IDataManagementService, DisabledDataManagementService>();
+    }
 
-            // Na razie wyłączam dla portable
-            // services.AddSingleton<IDatabaseStatusRepository, SqliteDatabaseStatusRepository>();
-            // services.AddSingleton<IDataManagementRepository, SqliteDataManagementRepository>();
-        }
-        else
-        {
-            services.AddSingleton<IIcdCodeRepository, PostgresIcdCodeRepository>();
-            services.AddSingleton<IPolishDrugRegistryRepository, PostgresPolishDrugRegistryRepository>();
-            services.AddSingleton<IAuditLogRepository, PostgresAuditLogRepository>();
-            services.AddSingleton<IInteractionRepository, PostgresInteractionRepository>();
-
-            services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
-            services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
-        }
-
-        services.AddSingleton<IDrugRepository, PostgresDrugRepository>();
-        services.AddSingleton<ISubstanceRepository, PostgresSubstanceRepository>();
-        services.AddSingleton<IInteractionRepository, PostgresInteractionRepository>();
-        services.AddSingleton<IInteractionHistoryRepository, PostgresInteractionHistoryRepository>();
-        services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
-        services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
-        services.AddSingleton<IAuditLogRepository, PostgresAuditLogRepository>();
-        services.AddSingleton<IDrugExplorerRepository, PostgresDrugExplorerRepository>();
-        services.AddSingleton<IPolishDrugRegistryService, PolishDrugRegistryService>();
-        services.AddSingleton<IPolishDrugRegistryRepository, PostgresPolishDrugRegistryRepository>();
-        services.AddSingleton<IIcdCodeRepository, PostgresIcdCodeRepository>();
-        services.AddSingleton<IIcdCodeService, IcdCodeService>();
-        services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
-        services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
-
+    private static void RegisterApplicationServices(IServiceCollection services)
+    {
         services.AddSingleton<PostgresDrugDataService>();
 
-        services.AddSingleton<IAuditLogService, AuditLogService>();
-
-        services.AddSingleton<IDrugExplorerService>(sp =>
-            sp.GetRequiredService<PostgresDrugDataService>());
-        
         services.AddSingleton<IDrugLookupService>(sp =>
-            sp.GetRequiredService<PostgresDrugDataService>());
-
-        services.AddSingleton<IDrugExplorerService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
         services.AddSingleton<ISubstanceLookupService>(sp =>
@@ -99,80 +104,29 @@ public partial class App : Application
 
         services.AddSingleton<IInteractionHistoryService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
-        if (useSqlite)
-        {
-            services.AddSingleton<SqliteConnectionFactory>();
-            services.AddSingleton<InteractionCheckerViewModel>();
-            services.AddSingleton<IDrugRepository, SqliteDrugRepository>();
-            services.AddSingleton<ISubstanceRepository, SqliteSubstanceRepository>();
-            services.AddSingleton<IInteractionRepository, SqliteInteractionRepository>();
-            services.AddSingleton<IDrugExplorerRepository, SqliteDrugExplorerRepository>();
-            services.AddSingleton<ICDLookerViewModel>();
-            services.AddSingleton<IAuditLogRepository, SqliteAuditLogRepository>();
-            services.AddSingleton<IIcdCodeRepository, SqliteIcdCodeRepository>();
-            services.AddSingleton<IPolishDrugRegistryRepository, SqlitePolishDrugRegistryRepository>();
 
-            services.AddSingleton<IDatabaseStatusService, SqliteDatabaseStatusService>();
-            services.AddSingleton<IDataManagementService, DisabledDataManagementService>();
-        }
-        else
-        {
-            services.AddSingleton<IDrugRepository, PostgresDrugRepository>();
-            services.AddSingleton<ISubstanceRepository, PostgresSubstanceRepository>();
-            services.AddSingleton<IInteractionRepository, PostgresInteractionRepository>();
-            services.AddSingleton<IDrugExplorerRepository, PostgresDrugExplorerRepository>();
-            services.AddSingleton<InteractionCheckerViewModel>();
-            services.AddSingleton<ICDLookerViewModel>();
-            services.AddSingleton<IAuditLogRepository, PostgresAuditLogRepository>();
-            services.AddSingleton<IIcdCodeRepository, PostgresIcdCodeRepository>();
-            services.AddSingleton<IPolishDrugRegistryRepository, PostgresPolishDrugRegistryRepository>();
-            services.AddSingleton<InteractionCheckerViewModel>();
-            services.AddSingleton<ICDLookerViewModel>();
-            services.AddSingleton<DrugExplorerViewModel>();
-            services.AddSingleton<MainViewModel>();
-            services.AddSingleton<IDatabaseStatusRepository, PostgresDatabaseStatusRepository>();
-            services.AddSingleton<IDataManagementRepository, PostgresDataManagementRepository>();
-        }
+        services.AddSingleton<IDrugExplorerService>(sp =>
+            sp.GetRequiredService<PostgresDrugDataService>());
 
-        services.AddTransient<InteractionAnalysisService>();
-        services.AddTransient<MainViewModel>();
-        services.AddTransient<MainWindow>();
+        services.AddSingleton<IPolishDrugRegistryService, PolishDrugRegistryService>();
+        services.AddSingleton<IIcdCodeService, IcdCodeService>();
+        services.AddSingleton<IAuditLogService, AuditLogService>();
 
-        _serviceProvider = services.BuildServiceProvider();
-
-        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        MainWindow = mainWindow;
-        mainWindow.Show();
-
-       // await ShowStartupDatabaseStatsAsync(mainWindow);
+        services.AddSingleton<InteractionAnalysisService>();
     }
 
-    private async Task ShowStartupDatabaseStatsAsync(Window owner)
+    private static void RegisterViewModels(IServiceCollection services)
     {
-        if (_serviceProvider is null)
-            return;
+        services.AddSingleton<InteractionCheckerViewModel>();
+        services.AddSingleton<ICDLookerViewModel>();
+        services.AddSingleton<DrugExplorerViewModel>();
+        services.AddSingleton<PolishDrugRegistryViewModel>();
 
-        try
-        {
-            var databaseStatusService = _serviceProvider.GetRequiredService<IDatabaseStatusService>();
-            var status = await databaseStatusService.GetDatabaseStatusAsync();
+        services.AddSingleton<MainViewModel>();
+    }
 
-            var viewModel = new DatabaseStatsViewModel(status);
-
-            var statsWindow = new DatabaseStatsWindow(viewModel)
-            {
-                Owner = owner
-            };
-
-            statsWindow.ShowDialog();
-        }
-        catch (Exception ex)
-        {
-            MessageBox.Show(
-                $"Could not load database statistics.\n\n{ex.Message}",
-                "Database statistics unavailable",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
+    private static void RegisterViews(IServiceCollection services)
+    {
+        services.AddSingleton<MainWindow>();
     }
 }

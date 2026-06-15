@@ -3,12 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:views="clr-namespace:DrugCompare.Views"
         Title="MedCompare"
-        Width="1400"
-        Height="760"
-        MinWidth="1180"
-        MinHeight="640"
-        ResizeMode="CanResize"
-        WindowStartupLocation="CenterScreen">
+        Height="850"
+        Width="1400">
 
     <DockPanel Background="#F4F7FB">
 
@@ -112,7 +108,7 @@
             <TabItem Header="Polish Drug Registry">
                 <views:PolishDrugRegistryView DataContext="{Binding PolishDrugRegistry}" />
             </TabItem>
-            
+
             <TabItem Header="ICD Looker">
                 <views:IcdLookerView DataContext="{Binding IcdLooker}" />
             </TabItem>
