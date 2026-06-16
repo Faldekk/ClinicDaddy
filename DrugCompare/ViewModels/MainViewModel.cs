@@ -33,7 +33,7 @@ public sealed class MainViewModel : ObservableObject
     InteractionCheckerViewModel interactionChecker,
     IcdLookerViewModel icdLooker,
     DrugExplorerViewModel drugExplorer,
-    PolishRegistryViewModel polishDrugRegistry,
+    PolishDrugRegistryViewModel polishDrugRegistry,
     IDatabaseStatusService databaseStatusService,
     IDataManagementService dataManagementService,
     IInteractionHistoryService interactionHistoryService,
@@ -64,7 +64,7 @@ public sealed class MainViewModel : ObservableObject
 
     public DrugExplorerViewModel DrugExplorer { get; }
 
-    public PolishRegistryViewModel PolishDrugRegistry { get; }
+    public PolishDrugRegistryViewModel PolishDrugRegistry { get; }
 
     // Shared / remaining state
 

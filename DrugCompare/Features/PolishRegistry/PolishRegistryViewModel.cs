@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace DrugCompare.Features.PolishRegistry;
 
-public sealed class PolishRegistryViewModel : ObservableObject
+public sealed class PolishDrugRegistryViewModel : ObservableObject
 {
     private readonly IPolishDrugRegistryService _polishDrugRegistryService;
     private readonly IAuditLogService _auditLogService;
@@ -17,7 +17,7 @@ public sealed class PolishRegistryViewModel : ObservableObject
     private string _statusMessage = "Ready.";
     private bool _isBusy;
 
-    public PolishRegistryViewModel(
+    public PolishDrugRegistryViewModel(
         IPolishDrugRegistryService polishDrugRegistryService,
         IAuditLogService auditLogService)
     {

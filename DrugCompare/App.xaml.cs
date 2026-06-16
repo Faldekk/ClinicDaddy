@@ -1,18 +1,15 @@
+using DrugCompare.Application.Repositories.Contracts;
+using DrugCompare.Application.Services.Contracts;
+using DrugCompare.Application.Services.Implementations;
+using DrugCompare.Features.DrugExplorer;
+using DrugCompare.Features.IcdLooker;
+using DrugCompare.Features.InteractionChecker;
+using DrugCompare.Features.PolishRegistry;
+using DrugCompare.Infrastructure.SQLite;
+using DrugCompare.ViewModels;
 using DrugCompare.ViewModels.Interaction;
 using Microsoft.Extensions.Configuration;
-using DrugCompare.Infrastructure.SQLite;
-using DrugCompare.Infrastructure.Postgres;
-using DrugCompare.Features.InteractionChecker;
-using DrugCompare.Features.DrugExplorer;
-using DrugCompare.Features.PolishRegistry;
-using DrugCompare.Application.Services.Implementations;
-using DrugCompare.Features.IcdLooker;
-using DrugCompare.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using DrugCompare.Application.Services.Contracts;
-using DrugCompare.Application.Repositories.Contracts;
-using System.IO;
-using System.Windows;
 
 namespace DrugCompare;
 
@@ -20,7 +17,7 @@ public partial class App : System.Windows.Application
 {
     private ServiceProvider? _serviceProvider;
 
-    protected override void OnStartup(StartupEventArgs e)
+    protected override void OnStartup(System.Windows.StartupEventArgs e)
     {
         base.OnStartup(e);
 
@@ -37,7 +34,6 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IConfiguration>(configuration);
 
         RegisterDatabase(configuration, services);
-        RegisterSqliteServices(services);
         RegisterApplicationServices(services);
         RegisterViewModels(services);
         RegisterViews(services);
@@ -48,7 +44,7 @@ public partial class App : System.Windows.Application
         mainWindow.Show();
     }
 
-    protected override void OnExit(ExitEventArgs e)
+    protected override void OnExit(System.Windows.ExitEventArgs e)
     {
         _serviceProvider?.Dispose();
         base.OnExit(e);
@@ -87,12 +83,9 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IDatabaseStatusService, DatabaseStatusService>();
         services.AddSingleton<IDataManagementService, DisabledDataManagementService>();
     }
+
     private static void RegisterApplicationServices(IServiceCollection services)
     {
-        /*
-         * This class still has an old name, but it works as a service wrapper.
-         * It uses repository interfaces, so in SQLite mode it will use SQLite repositories.
-         */
         services.AddSingleton<PostgresDrugDataService>();
 
         services.AddSingleton<IDrugLookupService>(sp =>
@@ -113,19 +106,16 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IDrugExplorerService>(sp =>
             sp.GetRequiredService<PostgresDrugDataService>());
 
-        services.AddSingleton<IDatabaseStatusService, DatabaseStatusService>();
-        services.AddSingleton<IDataManagementService, DisabledDataManagementService>();
         services.AddSingleton<IPolishDrugRegistryService, PolishDrugRegistryService>();
-        services.AddSingleton<IIcdCodeService, IcdLookerService>();
+        services.AddSingleton<IIcdCodeService, IcdCodeService>();
         services.AddSingleton<IAuditLogService, AuditLogService>();
-    
     }
 
     private static void RegisterViewModels(IServiceCollection services)
     {
         services.AddSingleton<InteractionCheckerViewModel>();
         services.AddSingleton<DrugExplorerViewModel>();
-        services.AddSingleton<PolishRegistryViewModel>();
+        services.AddSingleton<PolishDrugRegistryViewModel>();
         services.AddSingleton<IcdLookerViewModel>();
 
         services.AddSingleton<MainViewModel>();
