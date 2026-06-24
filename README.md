@@ -1,396 +1,564 @@
-# MedCompare
+# ClinicDaddy
 
-MedCompare is a desktop application built with C# and WPF. Its main goal is to provide local access to medication-related information, active substances, drug interaction checking, Polish drug registry data, and ICD code lookup.
+**ClinicDaddy** is a local-first Clinical Decision Support System prototype designed to support physicians with faster access to structured and verified medical information.
 
-This project was created as an educational/prototype application. I wanted to build something more practical than a simple CRUD app — something that works with real medical datasets, runs locally, and shows how desktop development, databases, and basic clinical decision-support concepts can be combined in one project.
+The application focuses on drug data, active substances, ICD codes, ChPL documents, interaction safety analysis and future source-based RAG functionality.
 
-The application does not use cloud services or external APIs during normal use. The data is stored locally in a database.
-
----
-
-## What the application does
-
-MedCompare currently includes several main modules:
-
-* checking interactions between active substances,
-* searching drugs and active substances,
-* browsing Polish drug registry data,
-* searching ICD codes,
-* viewing history and audit logs,
-* running in local portable mode with SQLite.
+ClinicDaddy does **not** make autonomous clinical decisions. It supports the physician by organizing information, showing sources and describing medical relationships based only on verified local data.
 
 ---
 
-## Main modules
+## Purpose
 
-### Interaction Checker
+The purpose of ClinicDaddy is to create a medical information support tool that helps physicians access relevant data faster during clinical work.
 
-This is the main module of the application. It allows the user to search for active substances, manually add them, accept them for analysis, and then check whether known interactions exist in the local database.
+The system is designed to support:
 
-The application displays:
+* searching Polish medicinal products,
+* mapping drugs to active substances,
+* checking locally stored interaction information,
+* browsing ICD codes,
+* navigating ChPL documents by sections,
+* presenting source-based explanations,
+* preparing future RAG-based retrieval from verified medical sources.
 
-* the first substance,
-* the second substance,
-* interaction severity,
-* data source,
-* a short result message.
+The application is not intended to replace the physician’s knowledge, clinical experience, current guidelines or patient-specific assessment.
 
-An important part of this module is safe wording. The application does not say that a combination is “safe” when no interaction is found. It only means that no matching interaction record was found in the local database.
+---
+
+## Core Architecture
+
+ClinicDaddy follows a modular, local-first architecture.
+
+```text
+ClinicDaddy
+├── Presentation Layer
+│   ├── WPF Views
+│   ├── ViewModels
+│   └── UI navigation
+│
+├── Application Layer
+│   ├── models
+│   ├── interfaces
+│   ├── commands
+│   └── business logic
+│
+├── Infrastructure Layer
+│   ├── SQLite repositories
+│   ├── data import services
+│   ├── file readers
+│   └── local storage
+│
+└── Local Data Layer
+    ├── RPL / URPL data
+    ├── ICD data
+    ├── ChPL sections
+    ├── verified knowledge records
+    └── local interaction rules
+```
+
+The main architectural principle is separation of responsibility:
+
+```text
+UI displays data
+ViewModels coordinate user actions
+Application layer defines logic and contracts
+Infrastructure layer handles storage and external formats
+SQLite stores local verified data
+```
 
 ---
 
-### Drug Explorer
+## Local-First Data Strategy
 
-This module is used for browsing drug-related information and linked active substances.
+ClinicDaddy is designed as a **local-first** system.
 
-It is still being developed together with the drug database and data import process. The goal is to make it easy to check which active substances are connected with a specific medicinal product.
+This means that runtime medical explanations should be based on data stored in the local database, not on uncontrolled live internet access.
+
+The intended data flow is:
+
+```text
+verified source
+→ import / parsing
+→ local database
+→ review status
+→ application modules
+→ source-based explanation
+```
+
+The system should not generate unsupported medical claims. If there is no verified local source, the system should clearly state that no verified data was found.
 
 ---
+
+## Current Main Modules
 
 ### Polish Drug Registry
 
-This module is based on data from the Polish Register of Medicinal Products.
+The Polish Drug Registry module stores and displays data from the Polish Register of Medicinal Products.
 
-It allows searching medicinal products by:
-
-* product name,
-* active substance,
-* authorization number,
-* normalized product name.
-
-The database includes information such as:
+It contains information such as:
 
 * product name,
-* active substances,
+* active substance text,
 * strength,
 * pharmaceutical form,
 * marketing authorization holder,
 * authorization number,
-* Summary of Product Characteristics URL,
-* patient leaflet URL.
+* ChPL URL,
+* leaflet URL,
+* source metadata.
+
+This module is the main foundation for Polish drug data.
 
 ---
 
 ### ICD Looker
 
-This module allows searching ICD codes. The current version uses ICD-11 data in Polish.
+The ICD Looker module provides local ICD code search.
 
-The user can search by:
+It supports:
 
-* ICD code,
-* disease name,
-* description,
-* category/chapter.
+* searching by ICD code,
+* searching by title,
+* searching by description,
+* chapter filtering,
+* parent code display,
+* detailed ICD code preview.
 
-Example searches:
+The goal is to allow fast access to diagnostic codes without leaving the application.
+
+---
+
+### InteractionSafetyChecker
+
+The InteractionSafetyChecker module is responsible for checking relationships between selected medicinal products or active substances.
+
+The intended flow is:
 
 ```text
-diabetes
-asthma
-hypertension
-depression
+drug product
+→ active substance
+→ local verified interaction data
+→ source-based explanation
+→ physician interpretation
 ```
 
-Polish terms can also be used, for example:
+The module should never treat missing data as safety.
+
+Required safety rule:
 
 ```text
-cukrzyca
-astma
-nadciśnienie
-depresja
+No known interaction was found in the local database.
+Missing interaction data does not mean that the combination is safe.
 ```
 
----
-
-## Data
-
-The application uses local data imported into a SQLite database.
-
-The current portable database contains:
-
-| Dataset                      |                        Table | Record count |
-| ---------------------------- | ---------------------------: | -----------: |
-| Active substances            |          `active_substances` |        3,628 |
-| Substance interactions       |     `substance_interactions` |      627,553 |
-| ICD-11 PL codes              |                  `icd_codes` |       34,222 |
-| Polish drug registry records | `polish_drug_registry_items` |       22,785 |
-
-The data was imported from prepared CSV files. The project was originally developed with PostgreSQL, but later I added SQLite support so the application can run on another computer without requiring PostgreSQL installation or manual database setup.
-
----
-
-## Database modes
-
-The application can work in two database modes.
-
----
-
-## PostgreSQL development mode
-
-PostgreSQL was used as the main development database. It was useful for importing larger datasets, testing queries, and working with the data structure during development.
-
-Example `appsettings.json`:
-
-```json
-{
-  "Database": {
-    "Provider": "PostgreSQL"
-  },
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=drug_compare_db;Username=postgres;Password=YOUR_PASSWORD"
-  }
-}
-```
-
----
-
-## SQLite portable mode
-
-SQLite mode was added to make the app easier to share and run on another machine.
-
-In this mode, the application uses a local database file:
+Polish version:
 
 ```text
-data/medcompare.db
+Nie znaleziono znanej interakcji w lokalnej bazie.
+Brak danych o interakcji nie oznacza, że połączenie jest bezpieczne.
 ```
-
-Example `appsettings.json`:
-
-```json
-{
-  "Database": {
-    "Provider": "SQLite"
-  },
-  "ConnectionStrings": {
-    "DefaultConnection": "Data Source=data/medcompare.db"
-  }
-}
-```
-
-With this setup, the app can be distributed as a ZIP file together with the SQLite database.
 
 ---
 
-## Technologies used
+### ChPL Navigator
 
-The project uses:
+The ChPL Navigator is planned as a structured document browser for ChPL files.
 
-* C#,
-* .NET 8,
-* WPF,
-* MVVM-style architecture,
-* CommunityToolkit.Mvvm,
-* Dependency Injection,
-* PostgreSQL,
-* SQLite,
-* Npgsql,
-* Microsoft.Data.Sqlite.
+Instead of forcing the physician to manually scroll through long PDF documents, ChPL content should be split into sections.
 
----
-
-## Project structure
-
-Main folders:
+Important sections include:
 
 ```text
-DrugCompare/
-├── Models/
-├── Repositories/
-├── Services/
-├── Services/Contracts/
-├── ViewModels/
-├── Views/
-├── Database/
-├── database/sqlite/
+4.1 Wskazania do stosowania
+4.2 Dawkowanie i sposób podawania
+4.3 Przeciwwskazania
+4.4 Specjalne ostrzeżenia i środki ostrożności
+4.5 Interakcje
+4.6 Ciąża, laktacja i płodność
+4.7 Prowadzenie pojazdów i obsługiwanie maszyn
+4.8 Działania niepożądane
+4.9 Przedawkowanie
+5.1 Właściwości farmakodynamiczne
+5.2 Właściwości farmakokinetyczne
+5.3 Przedkliniczne dane o bezpieczeństwie
+6.1 Wykaz substancji pomocniczych
+```
+
+This module is important for future source-based RAG because each ChPL section can become a searchable source chunk.
+
+---
+
+## ChPL Import Tool
+
+The ChPL Import Tool is developed as a separate utility.
+
+Its responsibility is to transform ChPL PDF files into structured data.
+
+Planned processing pipeline:
+
+```text
+ChPL PDF
+→ raw text extraction
+→ section parsing
+→ review status
+→ JSON / CSV export
+→ future import into ClinicDaddy database
+```
+
+The importer should not make medical decisions. It only prepares structured source material.
+
+The current purpose of the tool is to support:
+
+* extracting text from ChPL PDF files,
+* splitting documents into meaningful sections,
+* exporting structured data,
+* preparing future local database imports.
+
+---
+
+## RAG Architecture
+
+ClinicDaddy is planned to use RAG as a source retrieval and explanation layer.
+
+RAG is not intended to make autonomous clinical decisions.
+
+The intended RAG flow is:
+
+```text
+user question
+→ identify drug / substance / ICD / topic
+→ retrieve verified local chunks
+→ generate source-based explanation
+→ show citations / sources
+→ include clinical responsibility disclaimer
+```
+
+RAG should only use sources stored in the local database.
+
+Allowed source types may include:
+
+```text
+RPL / URPL records
+ChPL sections
+ICD records
+reviewed scientific publications
+reviewed manual notes
+local verified interaction rules
+```
+
+If no verified source is available, RAG should not generate a medical explanation from general model knowledge.
+
+Expected behavior:
+
+```text
+verified source found
+→ answer with sources
+
+no verified source found
+→ no medical explanation
+→ missing data warning
+```
+
+---
+
+## Source-Based Explanation Principle
+
+Every generated medical explanation should be traceable to a source.
+
+A medical explanation should include:
+
+* source type,
+* source title,
+* section number or chunk reference,
+* review status,
+* imported date,
+* source URL or local reference where available.
+
+Example:
+
+```text
+Relation:
+substance A + substance B
+
+Description:
+...
+
+Potential mechanism:
+...
+
+Source-based management information:
+...
+
+Sources:
+- ChPL, section 4.5
+- reviewed scientific publication
+- local verified interaction rule
+
+Note:
+This information supports clinical assessment but does not replace the physician’s knowledge, experience or final clinical decision.
+```
+
+---
+
+## Review Status
+
+ClinicDaddy should distinguish between raw extracted data and verified medical knowledge.
+
+Suggested review statuses:
+
+```text
+candidate
+needs_review
+reviewed
+verified
+deprecated
+not_found
+```
+
+Only reviewed or verified records should be used for strong medical summaries.
+
+Candidate records may be stored, but they should not be used as final interaction knowledge without human review.
+
+---
+
+## Planned Data Model
+
+The future database should support traceability and source-based explanations.
+
+Suggested domains:
+
+```text
+polish_drug_registry_items
+active_substances
+drug_substances
+active_substance_synonyms
+
+icd_codes
+
+chpl_documents
+chpl_sections
+chpl_section_keywords
+
+knowledge_sources
+knowledge_chunks
+
+substance_facts
+local_interaction_rules
+management_notes
+
+interaction_history
+audit_log
+```
+
+### Example Responsibility of Tables
+
+#### `polish_drug_registry_items`
+
+Stores Polish drug registry product data.
+
+#### `active_substances`
+
+Stores normalized active substances.
+
+#### `drug_substances`
+
+Maps medicinal products to active substances.
+
+#### `chpl_documents`
+
+Stores metadata about imported ChPL documents.
+
+#### `chpl_sections`
+
+Stores parsed ChPL sections such as 4.3, 4.4, 4.5 and 6.1.
+
+#### `knowledge_sources`
+
+Stores source metadata.
+
+Example source types:
+
+```text
+RPL
+ChPL
+ICD
+ScientificPublication
+ManualNote
+LocalRule
+```
+
+#### `knowledge_chunks`
+
+Stores searchable source fragments used by future RAG.
+
+#### `local_interaction_rules`
+
+Stores reviewed interaction information between substances.
+
+#### `audit_log`
+
+Stores important actions performed in the application.
+
+---
+
+## Data Sources
+
+ClinicDaddy currently focuses on Polish and local verified data.
+
+Current and planned sources:
+
+```text
+RPL / URPL
+- medicinal products
+- active substances
+- ChPL links
+- leaflet links
+
+ChPL
+- structured product information
+- interactions
+- contraindications
+- warnings
+- pharmacological sections
+
+ICD
+- local diagnosis code lookup
+
+Reviewed scientific sources
+- planned future source type for RAG
+
+Local rules
+- manually reviewed interaction and relationship records
+```
+
+Deprecated or removed direction:
+
+```text
+DDInter
+EMA imports
+unreviewed external interaction datasets
+```
+
+The project currently prioritizes RPL, ChPL, ICD and reviewed local sources.
+
+---
+
+## Safety and Responsibility
+
+ClinicDaddy supports clinical information retrieval and relationship explanation.
+
+The system does not:
+
+* diagnose patients,
+* prescribe treatment,
+* replace clinical guidelines,
+* replace physician judgment,
+* make autonomous clinical decisions.
+
+The physician remains responsible for interpreting the information in the context of:
+
+* patient condition,
+* medical history,
+* laboratory results,
+* comorbidities,
+* current guidelines,
+* contraindications,
+* therapeutic alternatives,
+* clinical experience.
+
+Required safety principle:
+
+```text
+Brak danych w bazie nie oznacza braku ryzyka ani bezpieczeństwa danego połączenia.
+```
+
+---
+
+## Technical Stack
+
+Current technical direction:
+
+```text
+C#
+.NET
+WPF
+MVVM
+SQLite
+local-first architecture
+future local RAG / vector search
+```
+
+The application is designed to remain explainable, auditable and modular.
+
+---
+
+## Project Structure
+
+Example structure:
+
+```text
+ClinicDaddy/
+├── Application/
+│   ├── Models/
+│   ├── Repositories/
+│   ├── Services/
+│   └── Contracts/
+│
+├── Infrastructure/
+│   ├── SQLite/
+│   ├── Importers/
+│   └── Data/
+│
+├── Presentation/
+│   ├── Views/
+│   ├── ViewModels/
+│   └── Converters/
+│
 ├── data/
-└── appsettings.json
+│   └── clinicdaddy.db
+│
+├── database/
+│   ├── schema.sql
+│   └── sample_seed.sql
+│
+└── README.md
 ```
 
-Important parts:
+Actual structure may differ during development, but the goal is to keep the architecture modular.
+
+---
+
+## Development Direction
+
+Planned development path:
 
 ```text
-Models/                       data models
-Repositories/                 database access layer
-Services/                     application logic
-Services/Contracts/           service interfaces
-ViewModels/                   view logic
-Views/                        WPF views
-Database/SqliteConnectionFactory.cs
-database/sqlite/schema_sqlite.sql
-data/medcompare.db
+1. Stabilize Polish Drug Registry.
+2. Stabilize ICD Looker.
+3. Clean deprecated DDInter / EMA logic.
+4. Improve Data Management view.
+5. Add ChPL document import pipeline.
+6. Add ChPL Navigator.
+7. Add reviewed knowledge source storage.
+8. Add local RAG over verified chunks.
+9. Add source-based relationship explanations.
+10. Expand InteractionSafetyChecker using reviewed local rules.
 ```
 
 ---
 
-## Repository layer
+## Summary
 
-The application has separate repository implementations for PostgreSQL and SQLite.
+ClinicDaddy is a local-first Clinical Decision Support System prototype focused on verified medical sources, interaction safety, ChPL navigation, ICD lookup and source-based explanations.
 
-Examples of PostgreSQL repositories:
-
-```text
-PostgresIcdCodeRepository
-PostgresPolishDrugRegistryRepository
-PostgresAuditLogRepository
-PostgresInteractionRepository
-```
-
-Examples of SQLite repositories:
+The core idea is simple:
 
 ```text
-SqliteIcdCodeRepository
-SqlitePolishDrugRegistryRepository
-SqliteAuditLogRepository
-SqliteInteractionRepository
+faster access to verified medical information
++ clear source traceability
++ no unsupported claims
++ no autonomous clinical decisions
 ```
 
-In `App.xaml.cs`, the application reads:
-
-```json
-"Provider": "SQLite"
-```
-
-and chooses the correct repository implementations based on the selected provider.
-
----
-
-## Running locally
-
-From the project folder:
-
-```powershell
-dotnet build
-dotnet run
-```
-
-For SQLite mode, the application needs:
-
-```text
-data/medcompare.db
-```
-
-and a correctly configured `appsettings.json`.
-
----
-
-## Creating the SQLite database
-
-The SQLite database is created from:
-
-```text
-database/sqlite/schema_sqlite.sql
-```
-
-Commands:
-
-```powershell
-sqlite3 .\data\medcompare.db ".read .\database\sqlite\schema_sqlite.sql"
-sqlite3 .\data\medcompare.db ".tables"
-```
-
-Check record counts:
-
-```powershell
-sqlite3 .\data\medcompare.db "SELECT COUNT(*) FROM active_substances;"
-sqlite3 .\data\medcompare.db "SELECT COUNT(*) FROM substance_interactions;"
-sqlite3 .\data\medcompare.db "SELECT COUNT(*) FROM icd_codes;"
-sqlite3 .\data\medcompare.db "SELECT COUNT(*) FROM polish_drug_registry_items;"
-```
-
----
-
-## Publishing a portable release
-
-Create a self-contained Windows build:
-
-```powershell
-dotnet publish .\DrugCompare.csproj `
-  -c Release `
-  -r win-x64 `
-  --self-contained true `
-  /p:PublishSingleFile=true `
-  /p:IncludeNativeLibrariesForSelfExtract=true `
-  /p:EnableCompressionInSingleFile=true `
-  -o .\publish\portable
-```
-
-Copy the database and configuration:
-
-```powershell
-New-Item -ItemType Directory -Path .\publish\portable\data -Force
-
-Copy-Item .\data\medcompare.db .\publish\portable\data\medcompare.db -Force
-Copy-Item .\appsettings.json .\publish\portable\appsettings.json -Force
-```
-
-The final ZIP should look like this:
-
-```text
-MedCompare-portable.zip
-├── DrugCompare.exe
-├── appsettings.json
-└── data/
-    └── medcompare.db
-```
-
-After extracting the ZIP, the application can be started by running:
-
-```text
-DrugCompare.exe
-```
-
-No PostgreSQL installation is required in SQLite portable mode.
-
----
-
-## Current project status
-
-The project is still a prototype, but the main local features are already implemented.
-
-Currently implemented:
-
-* WPF desktop application,
-* multiple application modules,
-* local medical data import,
-* SQLite portable database,
-* interaction checking,
-* ICD code searching,
-* Polish drug registry searching,
-* basic audit logging,
-* portable release preparation.
-
-Still planned / in progress:
-
-* improving Drug Explorer,
-* improving Database Status for SQLite,
-* improving Data Management for SQLite,
-* automating data imports,
-* improving the UI,
-* improving user-facing messages,
-* creating a cleaner installer or release package.
-
----
-
-## Medical safety notice
-
-MedCompare is not a certified medical device yet :) (I really want this application to help doctors and interns as me myself is a member of a medical scientific club, in which I recently has presented the threats of blindly trusting technology)
-
-This application is an educational prototype and should not be used as the only source for medical decisions.
-
-If no interaction is found in the local database, it does not mean that a given combination of drugs or substances is safe. It only means that the application did not find a matching record in the currently available local data.
-
-Medical decisions should always be consulted with a doctor, pharmacist, or another qualified healthcare professional.
-
----
-
-## Author
-
-This project was created as an educational desktop application and a practical experiment with local medical information systems.
-
-The goal was to combine:
-
-* desktop application development,
-* local databases,
-* real medication-related datasets,
-* simple interaction checking,
-* a portable Windows release that can run on another computer without manual database setup.
+ClinicDaddy is designed to support physicians, not replace them.
