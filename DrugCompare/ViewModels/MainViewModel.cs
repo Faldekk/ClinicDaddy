@@ -4,6 +4,7 @@ using DrugCompare.Application.Models;
 using DrugCompare.Application.Services.Contracts;
 using DrugCompare.Features.IcdLooker;
 using DrugCompare.Features.InteractionChecker;
+using DrugCompare.Features.ChPLNavigator;
 using DrugCompare.Features.PolishRegistry;
 using DrugCompare.ViewModels.Interaction;
 using System.Collections.ObjectModel;
@@ -28,17 +29,19 @@ public sealed class MainViewModel : ObservableObject
     private string _selectedAuditLogDetails = "Select audit log entry to inspect details.";
 
     public MainViewModel(
-        InteractionCheckerViewModel interactionChecker,
-        IcdLookerViewModel icdLooker,
-        PolishDrugRegistryViewModel polishDrugRegistry,
-        IDatabaseStatusService databaseStatusService,
-        IDataManagementService dataManagementService,
-        IInteractionHistoryService interactionHistoryService,
-        IAuditLogService auditLogService)
+    InteractionCheckerViewModel interactionChecker,
+    IcdLookerViewModel icdLooker,
+    PolishDrugRegistryViewModel polishDrugRegistry,
+    ChPLNavigatorViewModel chPLNavigator,
+    IDatabaseStatusService databaseStatusService,
+    IDataManagementService dataManagementService,
+    IInteractionHistoryService interactionHistoryService,
+    IAuditLogService auditLogService)
     {
         InteractionChecker = interactionChecker;
         IcdLooker = icdLooker;
         PolishDrugRegistry = polishDrugRegistry;
+        ChPLNavigator = chPLNavigator;
 
         _databaseStatusService = databaseStatusService;
         _dataManagementService = dataManagementService;
@@ -54,6 +57,8 @@ public sealed class MainViewModel : ObservableObject
     public InteractionCheckerViewModel InteractionChecker { get; }
 
     public IcdLookerViewModel IcdLooker { get; }
+
+    public ChPLNavigatorViewModel ChPLNavigator { get; }
 
     public PolishDrugRegistryViewModel PolishDrugRegistry { get; }
 

@@ -3,8 +3,9 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:interaction="clr-namespace:DrugCompare.Features.InteractionChecker"
         xmlns:polishRegistry="clr-namespace:DrugCompare.Features.PolishRegistry"
+        xmlns:chplNavigator="clr-namespace:DrugCompare.Features.ChPLNavigator"
         xmlns:icdLooker="clr-namespace:DrugCompare.Features.IcdLooker"
-        Title="MedCompare"
+        Title="ClinicDaddy"
         Height="850"
         Width="1400"
         MinHeight="760"
@@ -35,16 +36,13 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="ListBoxItem">
-                        <Border
-                            Background="{TemplateBinding Background}"
-                            BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}"
-                            CornerRadius="10"
-                            Padding="{TemplateBinding Padding}">
-
-                            <ContentPresenter
-                                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                VerticalAlignment="Center"/>
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="10"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"/>
                         </Border>
 
                         <ControlTemplate.Triggers>
@@ -140,12 +138,12 @@
                             </Style>
                         </StackPanel.Style>
 
-                        <TextBlock Text="MedCompare"
+                        <TextBlock Text="ClinicDaddy"
                                    FontSize="18"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource PrimaryTextBrush}"/>
 
-                        <TextBlock Text="Tryb prototypu"
+                        <TextBlock Text="CDSS prototype"
                                    FontSize="11"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource AccentBrush}"/>
@@ -197,6 +195,18 @@
                         </Style>
                     </ListBox.Style>
 
+                    <!-- Index 0 -->
+                    <ListBoxItem>
+                        <StackPanel>
+                            <TextBlock Text="ChPL Navigator"/>
+                            <TextBlock Text="Sekcje ChPL, źródła, szybki podgląd"
+                                       FontSize="11"
+                                       Foreground="{StaticResource SecondaryTextBrush}"
+                                       Margin="0,3,0,0"/>
+                        </StackPanel>
+                    </ListBoxItem>
+
+                    <!-- Index 1 -->
                     <ListBoxItem>
                         <StackPanel>
                             <TextBlock Text="Sprawdzanie interakcji"/>
@@ -207,6 +217,7 @@
                         </StackPanel>
                     </ListBoxItem>
 
+                    <!-- Index 2 -->
                     <ListBoxItem>
                         <StackPanel>
                             <TextBlock Text="Polski Rejestr Leków"/>
@@ -217,6 +228,7 @@
                         </StackPanel>
                     </ListBoxItem>
 
+                    <!-- Index 3 -->
                     <ListBoxItem>
                         <StackPanel>
                             <TextBlock Text="Wyszukiwarka ICD-11"/>
@@ -243,21 +255,27 @@
                         </Style>
                     </StackPanel.Style>
 
+                    <Button Content="📄"
+                            ToolTip="ChPL Navigator"
+                            Tag="0"
+                            Click="SelectModule_Click"
+                            Style="{StaticResource IconButtonStyle}"/>
+
                     <Button Content="⚕"
                             ToolTip="Sprawdzanie interakcji"
-                            Tag="0"
+                            Tag="1"
                             Click="SelectModule_Click"
                             Style="{StaticResource IconButtonStyle}"/>
 
                     <Button Content="R"
                             ToolTip="Polski Rejestr Leków"
-                            Tag="1"
+                            Tag="2"
                             Click="SelectModule_Click"
                             Style="{StaticResource IconButtonStyle}"/>
 
                     <Button Content="ICD"
                             ToolTip="Wyszukiwarka ICD-11"
-                            Tag="2"
+                            Tag="3"
                             Click="SelectModule_Click"
                             FontSize="12"
                             Style="{StaticResource IconButtonStyle}"/>
@@ -266,7 +284,6 @@
                 <!-- Narzędzia dolne -->
                 <StackPanel Grid.Row="3"
                             Margin="0,0,0,10">
-
                     <StackPanel.Style>
                         <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Visible"/>
@@ -330,9 +347,20 @@
                             FontSize="12"
                             Style="{StaticResource IconButtonStyle}"/>
 
+                    <Button Content="DM"
+                            ToolTip="Zarządzanie danymi"
+                            Click="OpenDataManagement_Click"
+                            FontSize="12"
+                            Style="{StaticResource IconButtonStyle}"/>
+
                     <Button Content="A"
                             ToolTip="Dziennik audytu"
                             Click="OpenAuditLog_Click"
+                            Style="{StaticResource IconButtonStyle}"/>
+
+                    <Button Content="S"
+                            ToolTip="Ustawienia"
+                            Click="OpenSettings_Click"
                             Style="{StaticResource IconButtonStyle}"/>
 
                     <Button Content="?"
@@ -347,9 +375,10 @@
         <Grid Grid.Column="1"
               Background="{StaticResource PageBackgroundBrush}">
 
-            <interaction:InteractionCheckerView DataContext="{Binding InteractionChecker}">
-                <interaction:InteractionCheckerView.Style>
-                    <Style TargetType="interaction:InteractionCheckerView">
+            <!-- Index 0: ChPL Navigator -->
+            <chplNavigator:ChPLNavigatorView DataContext="{Binding ChPLNavigator}">
+                <chplNavigator:ChPLNavigatorView.Style>
+                    <Style TargetType="chplNavigator:ChPLNavigatorView">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SelectedIndex, ElementName=ModuleNavigation}" Value="0">
@@ -357,12 +386,13 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
-                </interaction:InteractionCheckerView.Style>
-            </interaction:InteractionCheckerView>
+                </chplNavigator:ChPLNavigatorView.Style>
+            </chplNavigator:ChPLNavigatorView>
 
-            <polishRegistry:PolishRegistryView DataContext="{Binding PolishDrugRegistry}">
-                <polishRegistry:PolishRegistryView.Style>
-                    <Style TargetType="polishRegistry:PolishRegistryView">
+            <!-- Index 1: Interaction Checker -->
+            <interaction:InteractionCheckerView DataContext="{Binding InteractionChecker}">
+                <interaction:InteractionCheckerView.Style>
+                    <Style TargetType="interaction:InteractionCheckerView">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
                             <DataTrigger Binding="{Binding SelectedIndex, ElementName=ModuleNavigation}" Value="1">
@@ -370,15 +400,30 @@
                             </DataTrigger>
                         </Style.Triggers>
                     </Style>
+                </interaction:InteractionCheckerView.Style>
+            </interaction:InteractionCheckerView>
+
+            <!-- Index 2: Polish Registry -->
+            <polishRegistry:PolishRegistryView DataContext="{Binding PolishDrugRegistry}">
+                <polishRegistry:PolishRegistryView.Style>
+                    <Style TargetType="polishRegistry:PolishRegistryView">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=ModuleNavigation}" Value="2">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
                 </polishRegistry:PolishRegistryView.Style>
             </polishRegistry:PolishRegistryView>
 
+            <!-- Index 3: ICD Looker -->
             <icdLooker:IcdLookerView DataContext="{Binding IcdLooker}">
                 <icdLooker:IcdLookerView.Style>
                     <Style TargetType="icdLooker:IcdLookerView">
                         <Setter Property="Visibility" Value="Collapsed"/>
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=ModuleNavigation}" Value="2">
+                            <DataTrigger Binding="{Binding SelectedIndex, ElementName=ModuleNavigation}" Value="3">
                                 <Setter Property="Visibility" Value="Visible"/>
                             </DataTrigger>
                         </Style.Triggers>

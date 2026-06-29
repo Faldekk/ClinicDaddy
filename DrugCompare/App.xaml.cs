@@ -4,9 +4,10 @@ using DrugCompare.Application.Services.Implementations;
 using DrugCompare.Features.DrugExplorer;
 using DrugCompare.Features.IcdLooker;
 using DrugCompare.Features.InteractionChecker;
+using DrugCompare.Features.ChPLNavigator;
+using DrugCompare.ViewModels;
 using DrugCompare.Features.PolishRegistry;
 using DrugCompare.Infrastructure.SQLite;
-using DrugCompare.ViewModels;
 using DrugCompare.ViewModels.Interaction;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -67,7 +68,7 @@ public partial class App : System.Windows.Application
         services.AddSingleton<InteractionCheckerViewModel>();
         services.AddSingleton<PolishDrugRegistryViewModel>();
         services.AddSingleton<IcdLookerViewModel>();
-
+        services.AddSingleton<ChPLNavigatorViewModel>();
         services.AddSingleton<MainViewModel>();
     }
     private static void RegisterSqliteServices(IServiceCollection services)
