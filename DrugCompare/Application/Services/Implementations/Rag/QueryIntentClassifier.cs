@@ -24,7 +24,8 @@ public static class QueryIntentClassifier
     public static IReadOnlyList<string> PreferredSections(QueryIntent intent) => intent switch
     {
         QueryIntent.Interaction => ["4.5", "4.4", "4.3", "5.2", "4.8"],
-        QueryIntent.Contraindication or QueryIntent.Warning => ["4.3", "4.4", "4.5", "4.8"],
+        QueryIntent.Contraindication => ["4.3", "4.4", "4.5", "4.8"],
+        QueryIntent.Warning => ["4.4", "4.3", "4.5", "4.8"],
         QueryIntent.PregnancyLactation => ["4.6", "4.3", "4.4"],
         QueryIntent.AdverseReaction => ["4.8", "4.4", "4.9"],
         QueryIntent.Posology or QueryIntent.RenalImpairment or QueryIntent.HepaticImpairment => ["4.2", "4.4", "5.2"],

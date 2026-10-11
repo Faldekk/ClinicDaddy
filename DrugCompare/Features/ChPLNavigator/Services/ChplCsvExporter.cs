@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Text;
+using System.Globalization;
 using DrugCompare.Features.ChPLNavigator.Models;
 
 namespace DrugCompare.Features.ChPLNavigator.Services;
@@ -36,7 +37,17 @@ public sealed class ChplCsvExporter
             return "\"\"";
         }
 
-        var escaped = value.Replace("\"", "\"\"");
+        // Quoting preserves CSV structure, but does not prevent spreadsheet formulas.
+        // Inspect ignored prefixes without removing any original document content.
+        var first = 0;
+        while (first < value.Length && (char.IsWhiteSpace(value[first])
+            || char.IsControl(value[first])
+            || char.GetUnicodeCategory(value[first]) == UnicodeCategory.Format))
+            first++;
+        var literal = first < value.Length && value[first] is '=' or '+' or '-' or '@'
+            ? "'" + value
+            : value;
+        var escaped = literal.Replace("\"", "\"\"");
         return $"\"{escaped}\"";
     }
 }

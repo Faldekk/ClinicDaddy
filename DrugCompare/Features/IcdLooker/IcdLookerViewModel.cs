@@ -20,10 +20,23 @@ public sealed partial class IcdLookerViewModel : ObservableObject
     private IcdCodeItem? selectedResult;
 
     [ObservableProperty]
-    private string statusMessage = "Ready.";
+    private string statusMessage = "Gotowe.";
 
     [ObservableProperty]
     private bool isBusy;
+    [ObservableProperty]
+    private bool isLoadingCategories;
+    public bool CanWork => !IsWorking;
+    public bool IsWorking => IsBusy || IsLoadingCategories;
+    partial void OnIsBusyChanged(bool value) => UpdateCommands();
+    partial void OnIsLoadingCategoriesChanged(bool value) => UpdateCommands();
+    private void UpdateCommands()
+    {
+        OnPropertyChanged(nameof(CanWork));
+        OnPropertyChanged(nameof(IsWorking));
+        SearchCommand.NotifyCanExecuteChanged();
+        ClearCommand.NotifyCanExecuteChanged();
+    }
 
     public ObservableCollection<IcdCodeItem> Results { get; } = new();
 
@@ -35,13 +48,14 @@ public sealed partial class IcdLookerViewModel : ObservableObject
         _ = LoadCategoriesAsync();
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private async Task SearchAsync()
     {
+        if (!CanWork) return;
         try
         {
             IsBusy = true;
-            StatusMessage = "Searching ICD codes...";
+            StatusMessage = "Wyszukiwanie kodów ICD...";
 
             Results.Clear();
             SelectedResult = null;
@@ -64,11 +78,11 @@ public sealed partial class IcdLookerViewModel : ObservableObject
 
             SelectedResult = Results.FirstOrDefault();
 
-            StatusMessage = $"Found {Results.Count} ICD code(s).";
+            StatusMessage = Results.Count == 0 ? "Nie znaleziono kodów. Zmień zapytanie lub dział." : $"Znaleziono {Results.Count} kodów ICD.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"ICD search failed: {ex.Message}";
+            StatusMessage = $"Nie udało się wyszukać kodów ICD. Spróbuj ponownie. Szczegóły: {ex.Message}";
         }
         finally
         {
@@ -81,6 +95,8 @@ public sealed partial class IcdLookerViewModel : ObservableObject
     {
         try
         {
+            IsLoadingCategories = true;
+            StatusMessage = "Ładowanie działów ICD...";
             Categories.Clear();
             Categories.Add("All");
 
@@ -95,20 +111,23 @@ public sealed partial class IcdLookerViewModel : ObservableObject
             }
 
             SelectedCategory = "All";
+            StatusMessage = "Gotowe.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Loading ICD chapters failed: {ex.Message}";
+            StatusMessage = $"Nie udało się załadować działów ICD. Możesz wyszukać bez filtra. Szczegóły: {ex.Message}";
         }
+        finally { IsLoadingCategories = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private void Clear()
     {
+        if (!CanWork) return;
         SearchText = string.Empty;
         SelectedCategory = "All";
         Results.Clear();
         SelectedResult = null;
-        StatusMessage = "Cleared.";
+        StatusMessage = "Wyczyszczono.";
     }
 }

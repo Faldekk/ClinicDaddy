@@ -167,8 +167,11 @@ public partial class App : System.Windows.Application
         services.AddSingleton<IRagAnswerValidator, RagAnswerValidator>();
         services.AddSingleton(new HttpClient());
         services.AddSingleton<IRagAnswerService, OllamaRagAnswerService>();
+        services.AddSingleton<IOllamaStatusService, OllamaStatusService>();
         services.AddSingleton<ChplPdfDownloader>();
         services.AddSingleton<IKnowledgeBaseIngestionService, KnowledgeBaseIngestionService>();
+        services.AddSingleton<IChplProductImporter, ChplProductImporter>();
+        services.AddSingleton<IChplBatchImportService, SqliteChplBatchImportService>();
         services.AddSingleton<IKnowledgeBaseReviewService, KnowledgeBaseReviewService>();
         services.AddSingleton<IKnowledgeBaseStatsService, KnowledgeBaseStatsService>();
         services.AddSingleton<IDatabaseStatusService, DatabaseStatusService>();

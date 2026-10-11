@@ -3,9 +3,9 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Border Background="White"
-            CornerRadius="12"
+            CornerRadius="0"
             Padding="14"
-            BorderBrush="#D6DEE8"
+            BorderBrush="{StaticResource LineBrush}"
             BorderThickness="1"
             Margin="0,12,0,0">
         <Grid>
@@ -22,18 +22,34 @@
                 </Grid.ColumnDefinitions>
 
                 <StackPanel>
-                    <TextBlock Text="Interaction check history"
+                    <TextBlock Text="Historia sprawdzeń interakcji"
                                FontSize="18"
                                FontWeight="Bold"/>
 
-                    <TextBlock Text="Recent locally saved interaction checks."
+                    <TextBlock Text="Ostatnie sprawdzenia zapisane lokalnie."
+                               TextWrapping="Wrap"
                                FontSize="12"
-                               Foreground="#607080"
+                               Foreground="{StaticResource MutedBrush}"
                                Margin="0,3,0,0"/>
+                    <ProgressBar IsIndeterminate="True" Height="3" Margin="0,8,12,0">
+                        <ProgressBar.Style>
+                            <Style TargetType="ProgressBar">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsLoadingHistory}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ProgressBar.Style>
+                    </ProgressBar>
+                    <TextBlock Text="{Binding HistoryStatus}" TextWrapping="Wrap"
+                               Margin="0,6,12,0" Foreground="{StaticResource MutedBrush}"
+                               AutomationProperties.LiveSetting="Polite"/>
                 </StackPanel>
 
                 <Button Grid.Column="1"
-                        Content="Refresh history"
+                        Content="Odśwież historię"
                         Command="{Binding LoadHistoryCommand}"
                         Width="140"
                         Height="34"/>
@@ -45,21 +61,21 @@
                       IsReadOnly="True"
                       CanUserAddRows="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Date"
+                    <DataGridTextColumn Header="Data"
                                         Binding="{Binding CreatedAt, StringFormat={}{0:yyyy-MM-dd HH:mm}}"
-                                        Width="150"/>
+                                        Width="140"/>
 
-                    <DataGridTextColumn Header="Highest severity"
+                    <DataGridTextColumn Header="Najwyższe ryzyko"
                                         Binding="{Binding HighestSeverity}"
                                         Width="130"/>
 
-                    <DataGridTextColumn Header="Accepted substances"
+                    <DataGridTextColumn Header="Substancje"
                                         Binding="{Binding AcceptedSubstancesText}"
-                                        Width="350"/>
+                                        Width="*"/>
 
-                    <DataGridTextColumn Header="Results"
+                    <DataGridTextColumn Header="Wyniki"
                                         Binding="{Binding ResultsText}"
-                                        Width="500"/>
+                                        Width="2*"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Grid>

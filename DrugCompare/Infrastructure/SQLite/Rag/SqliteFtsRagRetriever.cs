@@ -3,11 +3,16 @@ using DrugCompare.Application.Services.Contracts.Rag;
 using DrugCompare.Application.Services.Implementations.Rag;
 using Microsoft.Data.Sqlite;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace DrugCompare.Infrastructure.SQLite.Rag;
 
 public sealed class SqliteFtsRagRetriever : IRagRetriever
 {
+    private static readonly HashSet<string> StopWords = new(StringComparer.OrdinalIgnoreCase)
+    { "jakie", "jaki", "jaka", "jak", "czy", "są", "sa", "jest", "dla", "dotyczą", "dotycza", "dotyczy", "stosowania", "leku", "lek", "ten", "tego", "można", "mozna", "ma" };
+    private static readonly string[] MedicalPrefixes =
+        ["ostrzeż", "ostrzez", "przeciwwskaz", "interakc", "dawk", "niewydoln", "wątrob", "watrob", "ciężk", "ciezk"];
     private readonly SqliteConnectionFactory _connectionFactory;
 
     public SqliteFtsRagRetriever(SqliteConnectionFactory connectionFactory)
@@ -122,11 +127,11 @@ public sealed class SqliteFtsRagRetriever : IRagRetriever
         }
 
         var sectionRank = preferredSections.Count == 0
-            ? "k.id"
-            : $"CASE k.section_number {string.Join(" ", preferredSections.Select((section, index) => $"WHEN '{section}' THEN {index}"))} ELSE {preferredSections.Count} END";
+            ? string.Empty
+            : $"CASE k.section_number {string.Join(" ", preferredSections.Select((section, index) => $"WHEN '{section}' THEN {index}"))} ELSE {preferredSections.Count} END, ";
 
         builder.AppendLine($"""
-            ORDER BY {sectionRank}, k.clinical_priority DESC, rank
+            ORDER BY {sectionRank}k.clinical_priority DESC, rank, k.id
             LIMIT @limit;
         """);
 
@@ -157,10 +162,15 @@ public sealed class SqliteFtsRagRetriever : IRagRetriever
 
     private static string? BuildFtsQuery(string query)
     {
-        var terms = query
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(term => term.Length >= 2)
-            .Select(term => $"\"{term.Replace("\"", "\"\"")}\"")
+        var terms = Regex.Matches(query, @"[\p{L}\p{N}]+")
+            .Select(match => match.Value)
+            .Where(term => term.Length >= 2 && !StopWords.Contains(term))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Select(term =>
+            {
+                var prefix = MedicalPrefixes.FirstOrDefault(value => term.StartsWith(value, StringComparison.OrdinalIgnoreCase));
+                return prefix is null ? $"\"{term}\"" : $"\"{prefix}\"*";
+            })
             .ToArray();
 
         return terms.Length == 0 ? null : string.Join(" ", terms);

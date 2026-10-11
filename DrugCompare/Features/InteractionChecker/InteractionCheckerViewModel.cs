@@ -17,8 +17,8 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private string _drugNameInput = string.Empty;
     private string _manualSubstanceInput = string.Empty;
-    private string _resultSummaryMessage = "No interaction check performed yet.";
-    private string _statusMessage = "Ready.";
+    private string _resultSummaryMessage = "Nie wykonano jeszcze sprawdzenia interakcji.";
+    private string _statusMessage = "Gotowe.";
     private bool _isBusy;
 
     private ActiveSubstanceItem? _selectedDetectedSubstance;
@@ -36,14 +36,15 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         _interactionCheckerService = interactionCheckerService;
         _auditLogService = auditLogService;
 
-        FindDrugCommand = new AsyncRelayCommand(FindDrugAsync);
-        AcceptDetectedSubstanceCommand = new RelayCommand(AcceptDetectedSubstance);
-        AcceptAllDetectedSubstancesCommand = new RelayCommand(AcceptAllDetectedSubstances);
-        AddManualSubstanceCommand = new AsyncRelayCommand(AddManualSubstanceAsync);
-        RemoveAcceptedSubstanceCommand = new RelayCommand(RemoveAcceptedSubstance);
-        ClearCaseCommand = new RelayCommand(ClearCase);
-        CheckInteractionsCommand = new AsyncRelayCommand(CheckInteractionsAsync);
-        ExportCurrentReportCommand = new AsyncRelayCommand(ExportCurrentReportAsync);
+        FindDrugCommand = new AsyncRelayCommand(FindDrugAsync, () => CanWork);
+        AcceptDetectedSubstanceCommand = new RelayCommand(AcceptDetectedSubstance, () => CanWork);
+        AcceptAllDetectedSubstancesCommand = new RelayCommand(AcceptAllDetectedSubstances, () => CanWork);
+        AddManualSubstanceCommand = new AsyncRelayCommand(AddManualSubstanceAsync, () => CanWork);
+        RemoveAcceptedSubstanceCommand = new RelayCommand(RemoveAcceptedSubstance, () => CanWork);
+        ClearCaseCommand = new RelayCommand(ClearCase, () => CanWork);
+        CheckInteractionsCommand = new AsyncRelayCommand(CheckInteractionsAsync, () => CanWork);
+        ExportCurrentReportCommand = new AsyncRelayCommand(ExportCurrentReportAsync, () => CanWork);
+        AcceptedSubstances.CollectionChanged += (_, _) => InvalidateResults();
     }
 
     public string DrugNameInput
@@ -73,7 +74,30 @@ public sealed class InteractionCheckerViewModel : ObservableObject
     public bool IsBusy
     {
         get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        private set
+        {
+            if (!SetProperty(ref _isBusy, value)) return;
+            OnPropertyChanged(nameof(CanWork));
+            OnPropertyChanged(nameof(IsWorking));
+            FindDrugCommand.NotifyCanExecuteChanged();
+            AcceptDetectedSubstanceCommand.NotifyCanExecuteChanged();
+            AcceptAllDetectedSubstancesCommand.NotifyCanExecuteChanged();
+            AddManualSubstanceCommand.NotifyCanExecuteChanged();
+            RemoveAcceptedSubstanceCommand.NotifyCanExecuteChanged();
+            ClearCaseCommand.NotifyCanExecuteChanged();
+            CheckInteractionsCommand.NotifyCanExecuteChanged();
+            ExportCurrentReportCommand.NotifyCanExecuteChanged();
+        }
+    }
+
+    public bool CanWork => !IsBusy;
+    public bool IsWorking => IsBusy;
+
+    private void InvalidateResults()
+    {
+        InteractionResults.Clear();
+        SelectedInteraction = null;
+        ResultSummaryMessage = "Zmieniono listę substancji. Sprawdź interakcje ponownie.";
     }
 
     public ActiveSubstanceItem? SelectedDetectedSubstance
@@ -109,18 +133,20 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private async Task FindDrugAsync()
     {
+        if (!CanWork) return;
         DetectedSubstances.Clear();
+        SelectedDetectedSubstance = null;
 
         if (string.IsNullOrWhiteSpace(DrugNameInput))
         {
-            StatusMessage = "Enter drug name.";
+            StatusMessage = "Wpisz nazwę leku.";
             return;
         }
 
         var searchedDrugName = DrugNameInput.Trim();
 
         IsBusy = true;
-        StatusMessage = "Searching local drug dictionary...";
+        StatusMessage = "Wyszukiwanie w lokalnym słowniku leków…";
 
         try
         {
@@ -128,7 +154,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
             if (result is null || result.ActiveSubstances.Count == 0)
             {
-                StatusMessage = "Drug not found in local dictionary. Add active substance manually.";
+                StatusMessage = "Nie znaleziono leku w lokalnym słowniku. Dodaj substancję czynną ręcznie.";
 
                 await SafeAuditAsync("DrugSearched", new
                 {
@@ -147,7 +173,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
             }
 
             StatusMessage =
-                $"Found {result.ActiveSubstances.Count} active substance(s) for {result.DrugName}.";
+                $"Lek: {result.DrugName}. Znalezione substancje czynne: {result.ActiveSubstances.Count}.";
 
             await SafeAuditAsync("DrugSearched", new
             {
@@ -167,7 +193,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Drug lookup failed: {ex.Message}";
+            StatusMessage = $"Błąd wyszukiwania leku: {ex.Message}. Spróbuj ponownie.";
 
             await SafeAuditAsync("DrugSearchFailed", new
             {
@@ -184,13 +210,15 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private async Task AddManualSubstanceAsync()
     {
+        if (!CanWork) return;
         if (string.IsNullOrWhiteSpace(ManualSubstanceInput))
         {
-            StatusMessage = "Enter active substance name.";
+            StatusMessage = "Wpisz nazwę substancji czynnej.";
             return;
         }
 
         IsBusy = true;
+        StatusMessage = "Wyszukiwanie substancji czynnej…";
 
         try
         {
@@ -198,7 +226,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
             if (substance is null)
             {
-                StatusMessage = "Could not add active substance.";
+                StatusMessage = "Nie znaleziono substancji czynnej. Sprawdź nazwę.";
                 return;
             }
 
@@ -207,7 +235,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Adding substance failed: {ex.Message}";
+            StatusMessage = $"Błąd dodawania substancji: {ex.Message}. Spróbuj ponownie.";
         }
         finally
         {
@@ -217,9 +245,10 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private void AcceptDetectedSubstance()
     {
+        if (!CanWork) return;
         if (SelectedDetectedSubstance is null)
         {
-            StatusMessage = "Select detected active substance first.";
+            StatusMessage = "Najpierw wybierz wykrytą substancję czynną.";
             return;
         }
 
@@ -233,9 +262,10 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private void AcceptAllDetectedSubstances()
     {
+        if (!CanWork) return;
         if (DetectedSubstances.Count == 0)
         {
-            StatusMessage = "No detected substances to accept.";
+            StatusMessage = "Brak wykrytych substancji do dodania.";
             return;
         }
 
@@ -248,7 +278,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
         DetectedSubstances.Clear();
 
-        StatusMessage = $"Accepted {AcceptedSubstances.Count} active substance(s).";
+        StatusMessage = $"Substancje do sprawdzenia: {AcceptedSubstances.Count}.";
     }
 
     private void AddAcceptedSubstance(ActiveSubstanceItem substance)
@@ -259,7 +289,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
         if (alreadyExists)
         {
-            StatusMessage = $"Active substance already accepted: {substance.Name}.";
+            StatusMessage = $"Substancja jest już na liście: {substance.Name}.";
 
             _ = SafeAuditAsync("SubstanceAcceptSkipped", new
             {
@@ -292,37 +322,40 @@ public sealed class InteractionCheckerViewModel : ObservableObject
             Timestamp = DateTime.Now
         });
 
-        StatusMessage = $"Accepted: {substance.Name}.";
+        StatusMessage = $"Dodano: {substance.Name}.";
     }
 
     private void RemoveAcceptedSubstance()
     {
+        if (!CanWork) return;
         if (SelectedAcceptedSubstance is null)
         {
-            StatusMessage = "Select active substance to remove.";
+            StatusMessage = "Wybierz substancję do usunięcia.";
             return;
         }
 
         AcceptedSubstances.Remove(SelectedAcceptedSubstance);
         SelectedAcceptedSubstance = null;
 
-        StatusMessage = "Active substance removed.";
+        StatusMessage = "Usunięto substancję czynną.";
     }
 
     private async Task CheckInteractionsAsync()
     {
+        if (!CanWork) return;
         InteractionResults.Clear();
         SelectedInteraction = null;
 
         if (AcceptedSubstances.Count < 2)
         {
-            ResultSummaryMessage = "At least two active substances are required to check interactions.";
-            StatusMessage = "At least two active substances are required.";
+            ResultSummaryMessage = "Do sprawdzenia interakcji wymagane są co najmniej dwie substancje czynne.";
+            StatusMessage = ResultSummaryMessage;
             return;
         }
 
         IsBusy = true;
-        StatusMessage = "Checking substance interactions...";
+        StatusMessage = "Sprawdzanie interakcji substancji…";
+        ResultSummaryMessage = "Sprawdzanie interakcji…";
 
         try
         {
@@ -340,7 +373,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
             if (InteractionResults.Count == 0)
             {
                 ResultSummaryMessage =
-                    "No known interaction was found in the local database. Missing interaction data does not mean that the combination is safe.";
+                    "Nie znaleziono znanej interakcji w lokalnej bazie. Brak danych nie oznacza, że połączenie jest bezpieczne.";
             }
             else
             {
@@ -350,7 +383,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
                     .Severity;
 
                 ResultSummaryMessage =
-                    $"Found {InteractionResults.Count} interaction(s). Highest severity: {highestSeverity}.";
+                    $"Znalezione interakcje: {InteractionResults.Count}. Najwyższe ryzyko: {highestSeverity}.";
             }
 
             StatusMessage = ResultSummaryMessage;
@@ -375,8 +408,10 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ResultSummaryMessage = "Interaction check failed.";
-            StatusMessage = $"Interaction check failed: {ex.Message}";
+            InteractionResults.Clear();
+            SelectedInteraction = null;
+            ResultSummaryMessage = "Nie udało się sprawdzić interakcji. Wyniki nie są dostępne.";
+            StatusMessage = $"Błąd sprawdzania interakcji: {ex.Message}. Spróbuj ponownie.";
         }
         finally
         {
@@ -386,6 +421,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
     private void ClearCase()
     {
+        if (!CanWork) return;
         DrugNameInput = string.Empty;
         ManualSubstanceInput = string.Empty;
 
@@ -397,37 +433,36 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         SelectedAcceptedSubstance = null;
         SelectedInteraction = null;
 
-        ResultSummaryMessage = "No interaction check performed yet.";
-        StatusMessage = "Case cleared.";
+        ResultSummaryMessage = "Nie wykonano jeszcze sprawdzenia interakcji.";
+        StatusMessage = "Przypadek wyczyszczony.";
     }
 
     private async Task ExportCurrentReportAsync()
     {
+        if (!CanWork) return;
         if (AcceptedSubstances.Count == 0)
         {
-            StatusMessage = "No accepted substances to export.";
+            StatusMessage = "Brak substancji do wyeksportowania.";
             return;
         }
 
         var dialog = new SaveFileDialog
         {
-            Title = "Export interaction report",
-            Filter = "Text file (*.txt)|*.txt|All files (*.*)|*.*",
+            Title = "Eksport raportu interakcji",
+            Filter = "Plik tekstowy (*.txt)|*.txt|Wszystkie pliki (*.*)|*.*",
             FileName = $"medcompare-report-{DateTime.Now:yyyyMMdd-HHmm}.txt"
         };
 
-        if (dialog.ShowDialog() != true)
-        {
-            return;
-        }
-
+        IsBusy = true;
         try
         {
+            if (dialog.ShowDialog() != true) return;
             var report = BuildCurrentReport();
 
-            File.WriteAllText(dialog.FileName, report);
+            StatusMessage = "Zapisywanie raportu…";
+            await File.WriteAllTextAsync(dialog.FileName, report);
 
-            StatusMessage = $"Report exported: {dialog.FileName}";
+            StatusMessage = $"Zapisano raport: {dialog.FileName}";
 
             await SafeAuditAsync("ReportExported", new
             {
@@ -445,7 +480,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Report export failed: {ex.Message}";
+            StatusMessage = $"Błąd eksportu raportu: {ex.Message}";
 
             await SafeAuditAsync("ReportExportFailed", new
             {
@@ -453,6 +488,10 @@ public sealed class InteractionCheckerViewModel : ObservableObject
                 Error = ex.Message,
                 Timestamp = DateTime.Now
             });
+        }
+        finally
+        {
+            IsBusy = false;
         }
     }
 
@@ -492,7 +531,7 @@ public sealed class InteractionCheckerViewModel : ObservableObject
 
         if (InteractionResults.Count == 0)
         {
-            report.WriteLine("No known interaction was found in the local database.");
+            report.WriteLine(ResultSummaryMessage);
             report.WriteLine("Missing interaction data does not mean that the combination is safe.");
         }
         else

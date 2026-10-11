@@ -113,11 +113,44 @@ public sealed class PolishDrugRegistryRepositoryTests
 
             var retriever = new SqliteFtsRagRetriever(CreateConnectionFactory(databasePath));
             var interaction = await retriever.RetrieveAsync("interakcje", new RagRetrievalOptions());
+            var question = await retriever.RetrieveAsync("Jakie interakcje dotyczą stosowania Test?", new RagRetrievalOptions());
             var hidden = await retriever.RetrieveAsync("ukryty", new RagRetrievalOptions());
 
             Assert.AreEqual(2, interaction.Count);
+            Assert.AreEqual(2, question.Count, "Natural-language filler and punctuation must not hide matching evidence.");
             Assert.AreEqual("4.5", interaction[0].SectionNumber);
             Assert.AreEqual(0, hidden.Count);
+        }
+        finally
+        {
+            SqliteConnection.ClearAllPools();
+            if (File.Exists(databasePath)) File.Delete(databasePath);
+        }
+    }
+
+    [TestMethod]
+    public async Task RagRetriever_PreservesSeverity_AndHandlesPolishInflection()
+    {
+        var databasePath = Path.Combine(Path.GetTempPath(), $"drugcompare-rag-inflection-{Guid.NewGuid():N}.db");
+        try
+        {
+            await CreateKnowledgeBaseDatabaseAsync(databasePath);
+            await using var connection = new SqliteConnection($"Data Source={databasePath}");
+            await connection.OpenAsync();
+            await using var command = connection.CreateCommand();
+            command.CommandText = """
+                INSERT INTO knowledge_chunks (id, source_type, source_title, product_name, section_number, chunk_text, chunk_hash, review_status, created_at)
+                VALUES (1, 'ChPL', 'Przeciwwskazania', 'Test', '4.3', 'Przeciwwskazane w ciężkiej niewydolności wątroby.', 'one', 'reviewed', '2026-01-01'),
+                       (2, 'ChPL', 'Ostrzeżenia', 'Test', '4.4', 'Ostrożnie przy łagodnej niewydolności wątroby.', 'two', 'reviewed', '2026-01-01');
+                INSERT INTO knowledge_chunks_fts (rowid, source_title, product_name, section_number, chunk_text)
+                SELECT id, source_title, product_name, section_number, chunk_text FROM knowledge_chunks;
+                """;
+            await command.ExecuteNonQueryAsync();
+            var retriever = new SqliteFtsRagRetriever(CreateConnectionFactory(databasePath));
+            var results = await retriever.RetrieveAsync("Test ciężka niewydolność wątroby", new RagRetrievalOptions());
+            Assert.AreEqual(1, results.Count, "Severity must not be discarded while normalizing inflection.");
+            Assert.AreEqual(1L, results[0].Id);
+            Assert.AreEqual(1, (await retriever.RetrieveAsync("Jakie przeciwwskazania ma Test?", new RagRetrievalOptions())).Count);
         }
         finally
         {

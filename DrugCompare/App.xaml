@@ -3,14 +3,14 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              ShutdownMode="OnMainWindowClose">
     <Application.Resources>
-        <Color x:Key="Ink">#1F2937</Color>
-        <Color x:Key="Muted">#667085</Color>
+        <Color x:Key="Ink">#16324A</Color>
+        <Color x:Key="Muted">#45677D</Color>
         <Color x:Key="Canvas">#FFFFFF</Color>
         <Color x:Key="Surface">#FFFFFF</Color>
-        <Color x:Key="SurfaceRaised">#E5E7EB</Color>
-        <Color x:Key="Line">#D1D5DB</Color>
-        <Color x:Key="Accent">#D1D5DB</Color>
-        <Color x:Key="AccentStrong">#9CA3AF</Color>
+        <Color x:Key="SurfaceRaised">#EDF7FC</Color>
+        <Color x:Key="Line">#B7D5E5</Color>
+        <Color x:Key="Accent">#176B9B</Color>
+        <Color x:Key="AccentStrong">#10547C</Color>
 
         <SolidColorBrush x:Key="InkBrush" Color="{StaticResource Ink}"/>
         <SolidColorBrush x:Key="MutedBrush" Color="{StaticResource Muted}"/>
@@ -19,50 +19,133 @@
         <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaised}"/>
         <SolidColorBrush x:Key="LineBrush" Color="{StaticResource Line}"/>
         <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource Accent}"/>
+        <SolidColorBrush x:Key="AccentStrongBrush" Color="{StaticResource AccentStrong}"/>
+        <SolidColorBrush x:Key="SoftAccentBrush" Color="{StaticResource SurfaceRaised}"/>
+        <!-- Shared aliases used by the feature views. -->
+        <SolidColorBrush x:Key="PageBackgroundBrush" Color="{StaticResource Canvas}"/>
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="{StaticResource Surface}"/>
+        <SolidColorBrush x:Key="BorderBrushSoft" Color="{StaticResource Line}"/>
+        <SolidColorBrush x:Key="PrimaryTextBrush" Color="{StaticResource Ink}"/>
+        <SolidColorBrush x:Key="SecondaryTextBrush" Color="{StaticResource Muted}"/>
 
-        <Style TargetType="Button">
-            <Setter Property="Background" Value="{StaticResource SurfaceRaisedBrush}"/>
-            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
-            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+        <Style x:Key="ClinicalButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="12,7"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}" CornerRadius="2">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
             <Style.Triggers>
                 <Trigger Property="IsMouseOver" Value="True">
-                    <Setter Property="Background" Value="{StaticResource AccentBrush}"/>
-                    <Setter Property="Foreground" Value="#111827"/>
+                    <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentStrongBrush}"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="{StaticResource AccentStrongBrush}"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderThickness" Value="2"/>
                 </Trigger>
                 <Trigger Property="IsEnabled" Value="False">
                     <Setter Property="Opacity" Value=".45"/>
                 </Trigger>
             </Style.Triggers>
         </Style>
-        <Style TargetType="TextBox">
+        <Style TargetType="Button" BasedOn="{StaticResource ClinicalButtonStyle}"/>
+        <Style x:Key="SearchProgressStyle" TargetType="ProgressBar">
+            <Setter Property="Height" Value="3"/>
+            <Setter Property="IsIndeterminate" Value="True"/>
+            <Setter Property="Foreground" Value="{StaticResource AccentBrush}"/>
+            <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+            <Setter Property="Visibility" Value="Collapsed"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsWorking}" Value="True">
+                    <Setter Property="Visibility" Value="Visible"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="ClinicalTextBoxStyle" TargetType="TextBox">
             <Setter Property="Background" Value="#FFFFFF"/>
-            <Setter Property="Foreground" Value="#111827"/>
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Padding" Value="10,7"/>
+            <Style.Triggers>
+                <Trigger Property="IsKeyboardFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
-        <Style TargetType="TextBlock">
+        <Style TargetType="TextBox" BasedOn="{StaticResource ClinicalTextBoxStyle}"/>
+        <Style TargetType="UserControl">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+        </Style>
+        <Style TargetType="Window">
             <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
         </Style>
         <Style TargetType="Expander">
             <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
-            <Setter Property="Background" Value="#F3F4F6"/>
+            <Setter Property="Background" Value="White"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="Padding" Value="6,8"/>
         </Style>
-        <Style TargetType="DataGrid">
+        <Style x:Key="ClinicalDataGridStyle" TargetType="DataGrid">
             <Setter Property="Background" Value="#FFFFFF"/>
             <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="RowBackground" Value="#FFFFFF"/>
-            <Setter Property="AlternatingRowBackground" Value="#F8FAFC"/>
+            <Setter Property="AlternatingRowBackground" Value="White"/>
             <Setter Property="GridLinesVisibility" Value="Horizontal"/>
             <Setter Property="HorizontalGridLinesBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+            <Setter Property="RowHeight" Value="32"/>
+            <Setter Property="ColumnHeaderHeight" Value="34"/>
+        </Style>
+        <Style TargetType="DataGrid" BasedOn="{StaticResource ClinicalDataGridStyle}"/>
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,6"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        </Style>
+        <Style TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="8,4"/>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+            <Setter Property="Padding" Value="8,4"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="Foreground" Value="{StaticResource InkBrush}"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
         </Style>
     </Application.Resources>
 </Application>

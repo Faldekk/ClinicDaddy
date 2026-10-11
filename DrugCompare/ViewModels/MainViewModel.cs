@@ -26,6 +26,7 @@ public sealed partial class MainViewModel : ObservableObject
     private readonly IKnowledgeBaseStatsService _knowledgeBaseStatsService;
     private readonly IKnowledgeBaseSearchService _knowledgeBaseSearchService;
     private readonly ILocalDatabaseBackupService _databaseBackupService;
+    private readonly IChplBatchImportService _chplBatchImportService;
 
     private string _databaseStatusText = "Database status not loaded.";
     private string _emaImportSummary = "EMA import status not loaded.";
@@ -34,7 +35,7 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _isBusy;
 
     private AuditLogItem? _selectedAuditLog;
-    private string _selectedAuditLogDetails = "Select audit log entry to inspect details.";
+    private string _selectedAuditLogDetails = "Wybierz zdarzenie, aby zobaczyć szczegóły.";
 
     public MainViewModel(
     InteractionCheckerViewModel interactionChecker,
@@ -47,7 +48,8 @@ public sealed partial class MainViewModel : ObservableObject
     IAuditLogService auditLogService, EvidenceAssistantViewModel evidenceAssistant,
     IKnowledgeBaseStatsService knowledgeBaseStatsService,
     IKnowledgeBaseSearchService knowledgeBaseSearchService,
-    ILocalDatabaseBackupService databaseBackupService)
+    ILocalDatabaseBackupService databaseBackupService,
+    IChplBatchImportService chplBatchImportService)
     {
         InteractionChecker = interactionChecker;
         IcdLooker = icdLooker;
@@ -62,13 +64,28 @@ public sealed partial class MainViewModel : ObservableObject
         _knowledgeBaseStatsService = knowledgeBaseStatsService;
         _knowledgeBaseSearchService = knowledgeBaseSearchService;
         _databaseBackupService = databaseBackupService;
+        _chplBatchImportService = chplBatchImportService;
 
 
         LoadDatabaseStatusCommand = new AsyncRelayCommand(LoadDatabaseStatusAsync);
         LoadDataManagementCommand = new AsyncRelayCommand(LoadDataManagementAsync);
-        LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync);
-        LoadAuditLogsCommand = new AsyncRelayCommand(LoadAuditLogsAsync);
+        LoadHistoryCommand = new AsyncRelayCommand(LoadHistoryAsync, () => !IsLoadingHistory);
+        LoadAuditLogsCommand = new AsyncRelayCommand(LoadAuditLogsAsync, () => !IsLoadingAuditLogs);
     }
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LoadHistoryCommand))]
+    private bool isLoadingHistory;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(LoadAuditLogsCommand))]
+    private bool isLoadingAuditLogs;
+
+    [ObservableProperty]
+    private string historyStatus = "Historia nie została jeszcze wczytana.";
+
+    [ObservableProperty]
+    private string auditLogStatus = "Dziennik nie został jeszcze wczytany.";
 
     [ObservableProperty]
     private int chplDocumentCount;
@@ -131,7 +148,15 @@ public sealed partial class MainViewModel : ObservableObject
     public bool IsBusy
     {
         get => _isBusy;
-        set => SetProperty(ref _isBusy, value);
+        set
+        {
+            if (SetProperty(ref _isBusy, value))
+            {
+                ImportChplBatchCommand.NotifyCanExecuteChanged();
+                RetryChplImportCommand.NotifyCanExecuteChanged();
+                RestoreDatabaseBackupCommand.NotifyCanExecuteChanged();
+            }
+        }
     }
 
     public AuditLogItem? SelectedAuditLog
@@ -259,7 +284,7 @@ public sealed partial class MainViewModel : ObservableObject
         finally { IsBusy = false; }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanImportChpl))]
     private async Task RestoreDatabaseBackupAsync()
     {
         var dialog = new OpenFileDialog { Title = "Wybierz kopię SQLite do przywrócenia", Filter = "SQLite database (*.db)|*.db" };
@@ -315,44 +340,48 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task LoadHistoryAsync()
     {
-        IsBusy = true;
-        StatusMessage = "Loading interaction history...";
+        if (IsLoadingHistory) return;
+        IsLoadingHistory = true;
+        HistoryStatus = "Wczytywanie historii interakcji…";
 
         try
         {
-            InteractionHistory.Clear();
-
             var items = await _interactionHistoryService.GetRecentHistoryAsync(20);
+
+            InteractionHistory.Clear();
 
             foreach (var item in items)
             {
                 InteractionHistory.Add(item);
             }
 
-            StatusMessage = $"Loaded {InteractionHistory.Count} history item(s).";
+            HistoryStatus = InteractionHistory.Count == 0
+                ? "Brak zapisanych sprawdzeń interakcji."
+                : $"Wczytane sprawdzenia: {InteractionHistory.Count}.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Loading history failed: {ex.Message}";
+            HistoryStatus = $"Nie udało się odświeżyć historii: {ex.Message}. Poprzednia lista pozostaje bez zmian. Spróbuj ponownie.";
         }
         finally
         {
-            IsBusy = false;
+            IsLoadingHistory = false;
         }
     }
 
     private async Task LoadAuditLogsAsync()
     {
-        IsBusy = true;
-        StatusMessage = "Loading audit logs...";
+        if (IsLoadingAuditLogs) return;
+        IsLoadingAuditLogs = true;
+        AuditLogStatus = "Wczytywanie dziennika zdarzeń…";
 
         try
         {
             var previouslySelectedId = SelectedAuditLog?.Id;
 
-            AuditLogs.Clear();
-
             var logs = await _auditLogService.GetRecentAsync(100);
+
+            AuditLogs.Clear();
 
             foreach (var log in logs)
             {
@@ -363,15 +392,17 @@ public sealed partial class MainViewModel : ObservableObject
                 AuditLogs.FirstOrDefault(x => x.Id == previouslySelectedId)
                 ?? AuditLogs.FirstOrDefault();
 
-            StatusMessage = $"Loaded {AuditLogs.Count} audit log entries.";
+            AuditLogStatus = AuditLogs.Count == 0
+                ? "Brak zapisanych zdarzeń."
+                : $"Wczytane zdarzenia: {AuditLogs.Count}.";
         }
         catch (Exception ex)
         {
-            StatusMessage = $"Loading audit logs failed: {ex.Message}";
+            AuditLogStatus = $"Nie udało się odświeżyć dziennika: {ex.Message}. Poprzednia lista pozostaje bez zmian. Spróbuj ponownie.";
         }
         finally
         {
-            IsBusy = false;
+            IsLoadingAuditLogs = false;
         }
     }
 
@@ -379,7 +410,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(detailsJson))
         {
-            return "No details.";
+            return "Brak szczegółów.";
         }
 
         try

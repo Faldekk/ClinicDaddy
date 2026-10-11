@@ -4,8 +4,10 @@ using CommunityToolkit.Mvvm.Input;
 using DrugCompare.Application.Models.Rag;
 using DrugCompare.Application.Services.Contracts.Rag;
 using DrugCompare.Application.Services.Contracts.KnowledgeBase;
+using DrugCompare.Presentation;
 using System.Diagnostics;
 using System.IO;
+using System.Windows.Threading;
 
 namespace DrugCompare.Features.EvidenceAssistant;
 
@@ -14,12 +16,18 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
     private readonly IRagRetriever _ragRetriever;
     private readonly IKnowledgeBaseReviewService _reviewService;
     private readonly IRagAnswerService _ragAnswerService;
+    private readonly IOllamaStatusService _ollamaStatusService;
+    private readonly WebDocumentLauncher _documentLauncher;
 
-    public EvidenceAssistantViewModel(IRagRetriever ragRetriever, IKnowledgeBaseReviewService reviewService, IRagAnswerService ragAnswerService)
+    public EvidenceAssistantViewModel(IRagRetriever ragRetriever, IKnowledgeBaseReviewService reviewService,
+        IRagAnswerService ragAnswerService, IOllamaStatusService ollamaStatusService,
+        WebDocumentLauncher? documentLauncher = null)
     {
         _ragRetriever = ragRetriever;
         _reviewService = reviewService;
         _ragAnswerService = ragAnswerService;
+        _ollamaStatusService = ollamaStatusService;
+        _documentLauncher = documentLauncher ?? new WebDocumentLauncher();
     }
 
     [ObservableProperty]
@@ -38,7 +46,50 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
     private string statusMessage = "Gotowe.";
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanEdit))]
+    [NotifyCanExecuteChangedFor(nameof(SearchCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ClearCommand))]
+    [NotifyCanExecuteChangedFor(nameof(ChangeReviewStatusCommand))]
+    [NotifyCanExecuteChangedFor(nameof(GenerateRagAnswerCommand))]
+    [NotifyCanExecuteChangedFor(nameof(CheckOllamaStatusCommand))]
     private bool isBusy;
+
+    public bool CanEdit => !IsBusy;
+    private bool CanWork() => !IsBusy;
+    private bool CanCheckOllama() => !IsBusy && !IsCheckingOllama;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(CheckOllamaStatusCommand))]
+    private bool isCheckingOllama;
+
+    [ObservableProperty] private string ollamaStatusText = "Połączenie z Ollama nie zostało jeszcze sprawdzone.";
+    [ObservableProperty] private bool isGenerating;
+    [ObservableProperty] private string ragActivity = "";
+
+    [RelayCommand(CanExecute = nameof(CanCheckOllama))]
+    private async Task CheckOllamaStatusAsync()
+    {
+        try { await UpdateOllamaStatusAsync(CancellationToken.None); }
+        catch (Exception ex) { OllamaStatusText = $"Nie udało się sprawdzić połączenia: {ex.Message}"; }
+    }
+
+    private async Task<OllamaStatus> UpdateOllamaStatusAsync(CancellationToken cancellationToken)
+    {
+        IsCheckingOllama = true;
+        OllamaStatusText = "Sprawdzanie Ollama i dostępności modelu...";
+        try
+        {
+            var status = await _ollamaStatusService.CheckAsync(cancellationToken);
+            OllamaStatusText = status.Message;
+            return status;
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            OllamaStatusText = "Sprawdzanie połączenia anulowane.";
+            throw;
+        }
+        finally { IsCheckingOllama = false; }
+    }
 
     [ObservableProperty]
     private KnowledgeChunkResult? selectedResult;
@@ -54,10 +105,11 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
 
     public ObservableCollection<KnowledgeChunkResult> Results { get; } = new();
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private async Task SearchAsync()
     {
         Results.Clear();
+        SelectedResult = null;
         GeneratedAnswer = string.Empty;
 
         if (string.IsNullOrWhiteSpace(Query))
@@ -102,18 +154,19 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private void Clear()
     {
         Query = string.Empty;
         ProductName = string.Empty;
         SectionNumber = string.Empty;
         Results.Clear();
+        SelectedResult = null;
         StatusMessage = "Wyczyszczono.";
         GeneratedAnswer = string.Empty;
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private async Task ChangeReviewStatusAsync(string? status)
     {
         if (SelectedResult is null)
@@ -150,7 +203,7 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
 
         try
         {
-            Process.Start(new ProcessStartInfo { FileName = SelectedResult.SourceUrl, UseShellExecute = true });
+            _documentLauncher.Open(SelectedResult.SourceUrl);
         }
         catch (Exception ex)
         {
@@ -158,10 +211,10 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
-    private async Task GenerateRagAnswerAsync()
+    [RelayCommand(CanExecute = nameof(CanWork), IncludeCancelCommand = true)]
+    private async Task GenerateRagAnswerAsync(CancellationToken cancellationToken)
     {
-        WriteRagUiLog($"Generate requested. Query='{Query}', existing results={Results.Count}.");
+        WriteRagUiLog($"Generate requested. Existing results={Results.Count}.");
         if (string.IsNullOrWhiteSpace(Query))
         {
             GeneratedAnswer = string.Empty;
@@ -169,30 +222,28 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
             return;
         }
 
+        DispatcherTimer? timer = null;
         try
         {
             IsBusy = true;
+            GeneratedAnswer = string.Empty;
             StatusMessage = "Przygotowywanie lokalnych źródeł dla RAG...";
 
-            if (Results.Count == 0)
+            // Always retrieve for the current question and filters.
+            Results.Clear();
+            SelectedResult = null;
+            var options = new RagRetrievalOptions
             {
-                var options = new RagRetrievalOptions
-                {
-                    Limit = 20,
-                    IncludeNeedsReview = IncludeNeedsReview,
-                    IncludeReviewed = true,
-                    IncludeVerified = true,
-                    ProductName = string.IsNullOrWhiteSpace(ProductName) ? null : ProductName,
-                    SectionNumber = string.IsNullOrWhiteSpace(SectionNumber) ? null : SectionNumber
-                };
-
-                var retrieved = await _ragRetriever.RetrieveAsync(Query, options);
-                foreach (var source in retrieved)
-                {
-                    Results.Add(source);
-                }
-                WriteRagUiLog($"Automatic retrieval completed. Results={Results.Count}.");
-            }
+                Limit = 20,
+                IncludeNeedsReview = IncludeNeedsReview,
+                IncludeReviewed = true,
+                IncludeVerified = true,
+                ProductName = string.IsNullOrWhiteSpace(ProductName) ? null : ProductName,
+                SectionNumber = string.IsNullOrWhiteSpace(SectionNumber) ? null : SectionNumber
+            };
+            var retrieved = await _ragRetriever.RetrieveAsync(Query, options, cancellationToken);
+            foreach (var source in retrieved) Results.Add(source);
+            WriteRagUiLog($"Automatic retrieval completed. Results={Results.Count}.");
 
             var approvedSources = Results
                 .Where(source => source.ReviewStatus is "reviewed" or "verified")
@@ -201,22 +252,45 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
             if (approvedSources.Count == 0)
             {
                 WriteRagUiLog("No reviewed or verified sources. Ollama call skipped.");
-                GeneratedAnswer =
-                    "Brak zatwierdzonych źródeł dla tego pytania. " +
-                    "Zaimportuj ChPL, wyszukaj je i oznacz dokument jako Reviewed lub Verified. " +
-                    "Model Ollama nie został wywołany.";
-                StatusMessage = "RAG wymaga co najmniej jednego źródła Reviewed lub Verified.";
+                StatusMessage = "Brak zatwierdzonych źródeł. Zweryfikuj dokument ChPL jako Reviewed lub Verified. Model nie został wywołany.";
                 return;
             }
 
-            StatusMessage = $"Redagowanie odpowiedzi z {approvedSources.Count} zatwierdzonych źródeł przez Ollama...";
+            var connection = await UpdateOllamaStatusAsync(cancellationToken);
+            if (!connection.IsReady)
+            {
+                StatusMessage = connection.Message + " Możesz nadal przeglądać wyszukane źródła.";
+                return;
+            }
+            cancellationToken.ThrowIfCancellationRequested();
+            IsGenerating = true;
+            var elapsed = Stopwatch.StartNew();
+            RagActivity = "Oczekiwanie na odpowiedź modelu • 0 s";
+            timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            timer.Tick += (_, _) => RagActivity = $"Oczekiwanie na odpowiedź modelu • {elapsed.Elapsed.TotalSeconds:0} s";
+            timer.Start();
+            StatusMessage = "Redagowanie odpowiedzi przez Ollama na podstawie zatwierdzonych źródeł...";
             WriteRagUiLog($"Ollama call started. Approved sources={approvedSources.Count}.");
-            var answer = await _ragAnswerService.GenerateAsync(Query, approvedSources);
+            var answer = await _ragAnswerService.GenerateAsync(Query, approvedSources, cancellationToken);
             WriteRagUiLog($"Ollama call completed. Findings={answer.Findings.Count}; insufficient={answer.InsufficientEvidence}.");
             GeneratedAnswer = answer.Summary;
             if (answer.Findings.Count > 0)
-                GeneratedAnswer += Environment.NewLine + Environment.NewLine + string.Join(Environment.NewLine, answer.Findings.Select(finding => $"• {finding.Claim} [źródła: {string.Join(", ", finding.SourceIds)}]"));
-            StatusMessage = answer.InsufficientEvidence ? "Brak wystarczających zweryfikowanych źródeł." : "Odpowiedź utworzona i zwalidowana względem przekazanych źródeł.";
+                GeneratedAnswer = "Wnioski modelu z wybranych fragmentów (nie pełny przegląd ChPL):" + Environment.NewLine + Environment.NewLine
+                    + string.Join(Environment.NewLine + Environment.NewLine, answer.Findings.Select(finding => $"• {finding.Claim} [źródła: {string.Join(", ", finding.SourceIds)}]\nFragment źródła: {finding.EvidenceQuote}"));
+            StatusMessage = answer.InsufficientEvidence ? "Model zgłosił brak wystarczających źródeł." : "Sprawdzono identyfikatory i dosłowność cytatów. Zgodność znaczenia wniosków wymaga oceny człowieka.";
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            GeneratedAnswer = string.Empty;
+            StatusMessage = "Generowanie anulowane. Wyszukane źródła pozostają dostępne.";
+        }
+        catch (RagServiceException ex)
+        {
+            WriteRagUiLog("Generate failed.", ex);
+            GeneratedAnswer = string.Empty;
+            StatusMessage = ex.Message;
+            if (ex.Kind is RagFailureKind.Connection or RagFailureKind.ModelMissing or RagFailureKind.Disabled)
+                OllamaStatusText = ex.Message;
         }
         catch (Exception ex)
         {
@@ -226,6 +300,9 @@ public sealed partial class EvidenceAssistantViewModel : ObservableObject
         }
         finally
         {
+            timer?.Stop();
+            IsGenerating = false;
+            RagActivity = "";
             IsBusy = false;
         }
     }

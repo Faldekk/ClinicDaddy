@@ -6,9 +6,14 @@
         xmlns:polishRegistry="clr-namespace:DrugCompare.Features.PolishRegistry"
         xmlns:icdLooker="clr-namespace:DrugCompare.Features.IcdLooker"
         xmlns:evidenceAssistant="clr-namespace:DrugCompare.Features.EvidenceAssistant"
+        xmlns:views="clr-namespace:DrugCompare.Views"
         Title="ClinicDaddy"
         Height="900"
         Width="1400"
+        MinHeight="700"
+        MinWidth="1100"
+        FontFamily="Segoe UI"
+        FontSize="13"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource CanvasBrush}">
 
@@ -39,7 +44,7 @@
         </Style>
 
         <Style x:Key="NavButtonStyle"
-               TargetType="Button">
+               TargetType="Button" BasedOn="{StaticResource ClinicalButtonStyle}">
             <Setter Property="Height"
                     Value="38"/>
             <Setter Property="Margin"
@@ -60,10 +65,17 @@
                     Value="Center"/>
             <Setter Property="Cursor"
                     Value="Hand"/>
+            <Style.Triggers>
+                <Trigger Property="Selector.IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentStrongBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
         <Style x:Key="CollapsedNavButtonStyle"
-               TargetType="Button">
+               TargetType="Button" BasedOn="{StaticResource ClinicalButtonStyle}">
             <Setter Property="Height"
                     Value="38"/>
             <Setter Property="Margin"
@@ -76,6 +88,14 @@
                     Value="Transparent"/>
             <Setter Property="Cursor"
                     Value="Hand"/>
+            <Setter Property="AutomationProperties.Name" Value="{Binding ToolTip, RelativeSource={RelativeSource Self}}"/>
+            <Style.Triggers>
+                <Trigger Property="Selector.IsSelected" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
+                    <Setter Property="Foreground" Value="{StaticResource AccentStrongBrush}"/>
+                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                </Trigger>
+            </Style.Triggers>
         </Style>
 
     </Window.Resources>
@@ -90,7 +110,7 @@
         <!-- LEFT NAVIGATION -->
         <Border Grid.Column="0"
                 Background="#FFFFFF"
-                BorderBrush="#D1D5DB"
+                BorderBrush="{StaticResource LineBrush}"
                 BorderThickness="0,0,1,0">
 
             <Grid>
@@ -100,8 +120,10 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <Button Grid.Row="0"
+                <Button x:Name="NavigationToggle" Grid.Row="0"
                         Content="☰"
+                        ToolTip="Zwiń menu"
+                        AutomationProperties.Name="Zwiń menu nawigacyjne"
                         Height="42"
                         Margin="10"
                         FontSize="18"
@@ -125,33 +147,33 @@
                                    Foreground="{StaticResource MutedBrush}"
                                    Margin="0,0,0,20"/>
 
-                        <Expander Header="Clinical Tools"
+                        <Expander Header="Narzędzia kliniczne"
           IsExpanded="True"
           Margin="0,0,0,8">
                             <StackPanel Margin="0,8,0,0">
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                Content="🔎  Evidence Assistant"
+                Content="Evidence Assistant"
                 Tag="0"
                 Click="Navigate_Click"/>
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                Content="📄  ChPL Navigator"
+                Content="ChPL Navigator"
                 Tag="1"
                 Click="Navigate_Click"/>
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                Content="⚕  Interaction Checker"
+                Content="Interaction Checker"
                 Tag="2"
                 Click="Navigate_Click"/>
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                Content="R  Polski Rejestr Leków"
+                Content="Polski Rejestr Leków"
                 Tag="3"
                 Click="Navigate_Click"/>
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                Content="ICD  ICD Looker"
+                Content="ICD Looker"
                 Tag="4"
                 Click="Navigate_Click"/>
 
@@ -160,13 +182,13 @@
 
                     
 
-                        <Expander Header="Database"
+                        <Expander Header="Dane"
                                   IsExpanded="True"
                                   Margin="0,0,0,8">
                             <StackPanel Margin="0,8,0,0">
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                                        Content="🗄  Data Management"
+                                        Content="Zarządzanie danymi"
                                         Tag="5"
                                         Click="Navigate_Click"/>
 
@@ -179,13 +201,17 @@
                             <StackPanel Margin="0,8,0,0">
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                                        Content="🧾  Audit Log"
+                                        Content="Dziennik operacji"
                                         Tag="6"
                                         Click="Navigate_Click"/>
 
                                 <Button Style="{StaticResource NavButtonStyle}"
-                                        Content="🕘  History"
+                                        Content="Historia"
                                         Tag="7"
+                                        Click="Navigate_Click"/>
+                                <Button Style="{StaticResource NavButtonStyle}"
+                                        Content="Ustawienia"
+                                        Tag="8"
                                         Click="Navigate_Click"/>
 
                             </StackPanel>
@@ -201,19 +227,19 @@
                             Margin="8,0,8,0">
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="🔎"
+        Content="EA"
         ToolTip="Evidence Assistant"
         Tag="0"
         Click="Navigate_Click"/>
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="📄"
+        Content="ChPL"
         ToolTip="ChPL Navigator"
         Tag="1"
         Click="Navigate_Click"/>
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="⚕"
+        Content="INT"
         ToolTip="Interaction Checker"
         Tag="2"
         Click="Navigate_Click"/>
@@ -231,30 +257,32 @@
         Click="Navigate_Click"/>
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="🗄"
-        ToolTip="Data Management"
+        Content="D"
+        ToolTip="Zarządzanie danymi"
         Tag="5"
         Click="Navigate_Click"/>
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="🧾"
-        ToolTip="Audit Log"
+        Content="LOG"
+        ToolTip="Dziennik operacji"
         Tag="6"
         Click="Navigate_Click"/>
 
                     <Button Style="{StaticResource CollapsedNavButtonStyle}"
-        Content="🕘"
-        ToolTip="History"
+        Content="H"
+        ToolTip="Historia"
         Tag="7"
         Click="Navigate_Click"/>
+                    <Button Style="{StaticResource CollapsedNavButtonStyle}"
+                            Content="UST" ToolTip="Ustawienia" Tag="8" Click="Navigate_Click"/>
 
                 </StackPanel>
 
-                <TextBlock Grid.Row="2"
+                <TextBlock x:Name="NavigationNotice" Grid.Row="2"
                            Text="Brak danych nie oznacza bezpieczeństwa klinicznego."
                            TextWrapping="Wrap"
                            FontSize="11"
-                           Foreground="#78909C"
+                           Foreground="{StaticResource MutedBrush}"
                            Margin="18,14,18,18"/>
 
             </Grid>
@@ -262,6 +290,7 @@
 
         <!-- MAIN CONTENT -->
         <TabControl x:Name="MainTabs"
+                    SelectionChanged="MainTabs_SelectionChanged"
                     Grid.Column="1"
                     Margin="22"
                     BorderThickness="0"
@@ -324,7 +353,7 @@
                                 </DockPanel>
 
                                 <TextBlock Text="{Binding KnowledgeSearchStatus}"
-                   Foreground="#607D8B"
+                   Foreground="{StaticResource MutedBrush}"
                    Margin="0,0,0,12"/>
 
                                 <DataGrid ItemsSource="{Binding KnowledgeSearchResults}"
@@ -357,7 +386,7 @@
                         <TextBlock Text="Data Management"
                                    FontSize="26"
                                    FontWeight="Bold"
-                                   Foreground="#102027"
+                                   Foreground="{StaticResource InkBrush}"
                                    Margin="0,0,0,18"/>
 
                         <Border Style="{StaticResource CardStyle}">
@@ -479,14 +508,35 @@
 
                         <Border Style="{StaticResource CardStyle}">
                             <StackPanel>
-                                <TextBlock Text="Data Imports"
+                                <TextBlock Text="Pobieranie dokumentów ChPL"
                                            FontSize="18"
                                            FontWeight="SemiBold"
                                            Margin="0,0,0,12"/>
 
-                                <TextBlock Text="Import danych jest obecnie wyłączony w trybie SQLite-only. Aktualizacje będą później realizowane przez lokalne paczki danych."
-                                           TextWrapping="Wrap"
-                                           Foreground="#607D8B"/>
+                                <TextBlock Text="Pobiera brakujące ChPL z linków zapisanych w polskim rejestrze. Przed importem powstaje kopia bazy. Nowe źródła wymagają weryfikacji."
+                                           TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,12"/>
+                                <WrapPanel>
+                                    <TextBlock Text="Liczba produktów w partii:" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                    <ComboBox ItemsSource="{Binding ChplBatchSizes}" SelectedItem="{Binding ChplBatchSize}"
+                                              Width="80" Margin="0,0,12,0"/>
+                                    <Button Content="Pobierz brakujące ChPL" Command="{Binding ImportChplBatchCommand}" Margin="0,0,8,0"/>
+                                    <Button Content="Anuluj" Command="{Binding CancelChplImportCommand}" Margin="0,0,8,0"/>
+                                    <Button Content="Ponów błędy" Command="{Binding RetryChplImportCommand}"/>
+                                </WrapPanel>
+                                <ProgressBar Value="{Binding ChplImportCompleted}" Maximum="{Binding ChplImportTotal}"
+                                             Minimum="0" Height="8" Margin="0,12,0,8"
+                                             Foreground="{StaticResource AccentBrush}" Background="{StaticResource SoftAccentBrush}"/>
+                                <TextBlock Text="{Binding ChplImportStatus}" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding ChplImportBackupPath}" Foreground="{StaticResource MutedBrush}"
+                                           TextWrapping="Wrap" Margin="0,4,0,8"/>
+                                <DataGrid ItemsSource="{Binding ChplImportFailures}" AutoGenerateColumns="False" IsReadOnly="True"
+                                          CanUserAddRows="False" HeadersVisibility="Column" MaxHeight="220">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="ID produktu" Binding="{Binding ProductId}" Width="100"/>
+                                        <DataGridTextColumn Header="Produkt" Binding="{Binding ProductName}" Width="220"/>
+                                        <DataGridTextColumn Header="Przyczyna błędu" Binding="{Binding Message}" Width="*" MinWidth="260"/>
+                                    </DataGrid.Columns>
+                                </DataGrid>
 
                                 <Button Content="Odśwież Data Management"
                                         Command="{Binding LoadDataManagementCommand}"
@@ -517,7 +567,7 @@
                         <TextBlock Text="Audit Log"
                                    FontSize="26"
                                    FontWeight="Bold"
-                                   Foreground="#102027"
+                                   Foreground="{StaticResource InkBrush}"
                                    Margin="0,0,0,18"/>
 
                         <Border Style="{StaticResource CardStyle}">
@@ -563,7 +613,7 @@
                         <TextBlock Text="Interaction History"
                                    FontSize="26"
                                    FontWeight="Bold"
-                                   Foreground="#102027"
+                                   Foreground="{StaticResource InkBrush}"
                                    Margin="0,0,0,18"/>
 
                         <Border Style="{StaticResource CardStyle}">
@@ -601,6 +651,9 @@
                 </ScrollViewer>
             </TabItem>
 
+            <TabItem>
+                <views:SettingsView/>
+            </TabItem>
         </TabControl>
     </Grid>
 </Window>

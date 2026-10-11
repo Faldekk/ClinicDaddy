@@ -3,26 +3,26 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto"
-                  Background="#F3F4F6">
+                  Background="{StaticResource SurfaceBrush}">
 
         <StackPanel Margin="24">
 
             <TextBlock Text="Ustawienia"
                        FontSize="26"
                        FontWeight="Bold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,0,4"/>
 
             <TextBlock Text="Zasady działania ClinicDaddy."
                        FontSize="14"
-                       Foreground="#6B7280"
+                       Foreground="{StaticResource MutedBrush}"
                        TextWrapping="Wrap"
                        Margin="0,0,0,18"/>
 
             <Border Background="White"
-                    CornerRadius="12"
+                    CornerRadius="0"
                     Padding="18"
-                    BorderBrush="#E5E7EB"
+                    BorderBrush="{StaticResource LineBrush}"
                     BorderThickness="1">
 
                 <StackPanel>
@@ -30,7 +30,7 @@
                     <TextBlock Text="Tryb aplikacji"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#111827"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,12"/>
 
                     <Grid>
@@ -48,40 +48,40 @@
                         <TextBlock Grid.Row="0"
                                    Grid.Column="0"
                                    Text="Nazwa aplikacji"
-                                   Foreground="#6B7280"
+                                   Foreground="{StaticResource MutedBrush}"
                                    Margin="0,0,12,10"/>
 
                         <TextBlock Grid.Row="0"
                                    Grid.Column="1"
                                    Text="ClinicDaddy"
                                    FontWeight="SemiBold"
-                                   Foreground="#111827"
+                                   Foreground="{StaticResource InkBrush}"
                                    Margin="0,0,0,10"/>
 
                         <TextBlock Grid.Row="1"
                                    Grid.Column="0"
                                    Text="Tryb danych"
-                                   Foreground="#6B7280"
+                                   Foreground="{StaticResource MutedBrush}"
                                    Margin="0,0,12,10"/>
 
                         <TextBlock Grid.Row="1"
                                    Grid.Column="1"
                                    Text="Local-first / SQLite"
                                    FontWeight="SemiBold"
-                                   Foreground="#111827"
+                                   Foreground="{StaticResource InkBrush}"
                                    Margin="0,0,0,10"/>
 
                         <TextBlock Grid.Row="2"
                                    Grid.Column="0"
                                    Text="Rola systemu"
-                                   Foreground="#6B7280"
+                                   Foreground="{StaticResource MutedBrush}"
                                    Margin="0,0,12,0"/>
 
                         <TextBlock Grid.Row="2"
                                    Grid.Column="1"
                                    Text="Clinical Decision Support System — informacyjne wsparcie lekarza"
                                    FontWeight="SemiBold"
-                                   Foreground="#111827"
+                                   Foreground="{StaticResource InkBrush}"
                                    TextWrapping="Wrap"/>
                     </Grid>
 
@@ -89,10 +89,10 @@
             </Border>
 
             <Border Background="White"
-                    CornerRadius="12"
+                    CornerRadius="0"
                     Padding="18"
                     Margin="0,12,0,0"
-                    BorderBrush="#E5E7EB"
+                    BorderBrush="{StaticResource LineBrush}"
                     BorderThickness="1">
 
                 <StackPanel>
@@ -100,43 +100,39 @@
                     <TextBlock Text="Zasady bezpieczeństwa"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#111827"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,6"/>
 
                     <TextBlock Text="Te zasady są stałe i nie powinny być wyłączane przez użytkownika."
                                FontSize="13"
-                               Foreground="#6B7280"
+                               Foreground="{StaticResource MutedBrush}"
                                TextWrapping="Wrap"
                                Margin="0,0,0,16"/>
 
-                    <CheckBox Content="System nie podejmuje autonomicznych decyzji klinicznych"
-                              IsChecked="True"
-                              IsEnabled="False"
+                    <TextBlock Text="• System nie podejmuje autonomicznych decyzji klinicznych"
+                              TextWrapping="Wrap"
                               Margin="0,0,0,8"/>
 
-                    <CheckBox Content="Brak danych w bazie nie oznacza bezpieczeństwa"
-                              IsChecked="True"
-                              IsEnabled="False"
+                    <TextBlock Text="• Brak danych w bazie nie oznacza bezpieczeństwa"
+                              TextWrapping="Wrap"
                               Margin="0,0,0,8"/>
 
-                    <CheckBox Content="Opisy medyczne powinny być oparte na lokalnych źródłach"
-                              IsChecked="True"
-                              IsEnabled="False"
+                    <TextBlock Text="• Opisy medyczne powinny być oparte na lokalnych źródłach"
+                              TextWrapping="Wrap"
                               Margin="0,0,0,8"/>
 
-                    <CheckBox Content="Lekarz interpretuje wynik w kontekście pacjenta"
-                              IsChecked="True"
-                              IsEnabled="False"
+                    <TextBlock Text="• Lekarz interpretuje wynik w kontekście pacjenta"
+                              TextWrapping="Wrap"
                               Margin="0,0,0,14"/>
 
-                    <Border Background="#F9FAFB"
-                            CornerRadius="8"
+                    <Border Background="{StaticResource SurfaceBrush}"
+                            CornerRadius="0"
                             Padding="12"
-                            BorderBrush="#E5E7EB"
+                            BorderBrush="{StaticResource LineBrush}"
                             BorderThickness="1">
 
                         <TextBlock TextWrapping="Wrap"
-                                   Foreground="#374151"
+                                   Foreground="{StaticResource InkBrush}"
                                    FontSize="13"
                                    LineHeight="20">
                             <Run Text="ClinicDaddy wspiera lekarza przez szybszy dostęp do uporządkowanych informacji medycznych. "/>
@@ -149,34 +145,38 @@
             </Border>
 
             <Border Background="White"
-                    CornerRadius="12"
+                    CornerRadius="0"
                     Padding="18"
                     Margin="0,12,0,0"
-                    BorderBrush="#E5E7EB"
+                    BorderBrush="{StaticResource LineBrush}"
                     BorderThickness="1">
 
                 <StackPanel>
 
-                    <TextBlock Text="Planowane funkcje"
+                    <TextBlock Text="Etap przygotowania MVP"
                                FontSize="18"
                                FontWeight="SemiBold"
-                               Foreground="#111827"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,12"/>
 
-                    <TextBlock Text="• RAG oparty wyłącznie na lokalnej bazie źródeł"
-                               Foreground="#374151"
+                    <TextBlock Text="• Najpierw spójność interfejsu i nawigacji"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,6"/>
 
-                    <TextBlock Text="• Nawigator sekcji ChPL"
-                               Foreground="#374151"
+                    <TextBlock Text="• Obsługa błędów i stabilność aplikacji"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,6"/>
 
-                    <TextBlock Text="• Baza zweryfikowanych relacji między substancjami"
-                               Foreground="#374151"
+                    <TextBlock Text="• Weryfikacja RAG oraz bazy danych na końcowym etapie"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource InkBrush}"
                                Margin="0,0,0,6"/>
 
-                    <TextBlock Text="• Źródłowe opisy możliwego postępowania"
-                               Foreground="#374151"/>
+                    <TextBlock Text="• Finalna paczka portable po ukończeniu weryfikacji"
+                               TextWrapping="Wrap"
+                               Foreground="{StaticResource InkBrush}"/>
 
                 </StackPanel>
             </Border>

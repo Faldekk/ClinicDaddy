@@ -11,6 +11,7 @@ public sealed class RagFinding
 {
     public string Claim { get; set; } = string.Empty;
     public List<long> SourceIds { get; set; } = [];
+    public string EvidenceQuote { get; set; } = string.Empty;
 }
 
 public sealed class RagAnswerValidationResult

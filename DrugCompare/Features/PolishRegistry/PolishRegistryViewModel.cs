@@ -4,8 +4,7 @@ using DrugCompare.Application.Models;
 using DrugCompare.Application.Services.Contracts;
 using DrugCompare.Features.ChPLNavigator;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.Windows;
+using DrugCompare.Presentation;
 
 namespace DrugCompare.Features.PolishRegistry;
 
@@ -13,6 +12,7 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
 {
     private readonly IPolishDrugRegistryService _polishDrugRegistryService;
     private readonly ChPLNavigatorViewModel _chplNavigator;
+    private readonly WebDocumentLauncher _documentLauncher;
 
     [ObservableProperty]
     private string searchText = string.Empty;
@@ -25,46 +25,45 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
 
     [ObservableProperty]
     private bool isBusy;
+    public bool CanWork => !IsBusy;
+    public bool IsWorking => IsBusy;
+    partial void OnIsBusyChanged(bool value)
+    {
+        OnPropertyChanged(nameof(CanWork));
+        OnPropertyChanged(nameof(IsWorking));
+        SearchCommand.NotifyCanExecuteChanged();
+        ClearCommand.NotifyCanExecuteChanged();
+    }
 
     public ObservableCollection<PolishDrugRegistryItem> Results { get; } = new();
     
-    private static void OpenUrl(string? url)
+    private void OpenUrl(string? url)
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            MessageBox.Show(
-                "Brak dostępnego linku.",
-                "Dokument niedostępny",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            StatusMessage = "Brak dostępnego linku.";
 
             return;
         }
 
         try
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = url,
-                UseShellExecute = true
-            });
+            _documentLauncher.Open(url);
         }
         catch (Exception ex)
         {
-            MessageBox.Show(
-                $"Nie udało się otworzyć linku: {ex.Message}",
-                "Błąd otwierania dokumentu",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
+            StatusMessage = $"Nie udało się otworzyć linku: {ex.Message}";
         }
     }
 
     public PolishDrugRegistryViewModel(
         IPolishDrugRegistryService polishDrugRegistryService,
-        ChPLNavigatorViewModel chplNavigator)
+        ChPLNavigatorViewModel chplNavigator,
+        WebDocumentLauncher? documentLauncher = null)
     {
         _polishDrugRegistryService = polishDrugRegistryService;
         _chplNavigator = chplNavigator;
+        _documentLauncher = documentLauncher ?? new WebDocumentLauncher();
     }
     [RelayCommand]
     private void OpenChpl()
@@ -78,7 +77,7 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
         OpenUrl(SelectedResult?.LeafletUrl);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private async Task SearchAsync()
     {
         await SearchAsync(SearchText);
@@ -99,6 +98,7 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
 
     public async Task SearchAsync(string query)
     {
+        if (!CanWork) return;
         try
         {
             IsBusy = true;
@@ -117,16 +117,11 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
 
             SelectedResult = Results.FirstOrDefault();
 
-            StatusMessage = $"Znaleziono {Results.Count} produktów.";
+            StatusMessage = Results.Count == 0 ? "Nie znaleziono produktów. Zmień nazwę lub użyj jej fragmentu." : $"Znaleziono {Results.Count} produktów.";
         }
         catch (Exception ex)
         {
             StatusMessage = $"Błąd wyszukiwania w rejestrze: {ex.Message}";
-            MessageBox.Show(
-                StatusMessage,
-                "Błąd Polish Registry",
-                MessageBoxButton.OK,
-                MessageBoxImage.Error);
         }
         finally
         {
@@ -134,9 +129,10 @@ public sealed partial class PolishDrugRegistryViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(CanWork))]
     private void Clear()
     {
+        if (!CanWork) return;
         SearchText = string.Empty;
         Results.Clear();
         SelectedResult = null;

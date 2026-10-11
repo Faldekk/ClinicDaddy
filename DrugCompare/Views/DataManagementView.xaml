@@ -3,10 +3,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Border Background="White"
-        CornerRadius="12"
+        CornerRadius="0"
         Padding="18"
         Margin="0,12,0,0"
-        BorderBrush="#E5E7EB"
+        BorderBrush="{StaticResource LineBrush}"
         BorderThickness="1">
 
         <StackPanel>
@@ -14,12 +14,12 @@
             <TextBlock Text="Źródła danych"
                    FontSize="18"
                    FontWeight="SemiBold"
-                   Foreground="#111827"
+                   Foreground="{StaticResource InkBrush}"
                    Margin="0,0,0,6"/>
 
             <TextBlock Text="ClinicDaddy korzysta wyłącznie z lokalnie zapisanych i zweryfikowanych źródeł. Moduł RAG ma opisywać relacje medyczne tylko na podstawie tych danych."
                    FontSize="13"
-                   Foreground="#6B7280"
+                   Foreground="{StaticResource MutedBrush}"
                    TextWrapping="Wrap"
                    Margin="0,0,0,16"/>
 
@@ -41,13 +41,13 @@
                        Grid.Column="0"
                        Text="RPL / URPL"
                        FontWeight="SemiBold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,12,14"/>
 
                 <TextBlock Grid.Row="0"
                        Grid.Column="1"
                        TextWrapping="Wrap"
-                       Foreground="#374151"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,0,14"
                        LineHeight="20">
                 <Run Text="Polski Rejestr Produktów Leczniczych: produkty, substancje czynne, postacie, moce, podmioty odpowiedzialne, linki do ChPL i ulotek."/>
@@ -59,13 +59,13 @@
                        Grid.Column="0"
                        Text="ChPL"
                        FontWeight="SemiBold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,12,14"/>
 
                 <TextBlock Grid.Row="1"
                        Grid.Column="1"
                        TextWrapping="Wrap"
-                       Foreground="#374151"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,0,14"
                        LineHeight="20">
                 <Run Text="Charakterystyka Produktu Leczniczego: sekcje 4.1–6.1, w tym wskazania, dawkowanie, przeciwwskazania, ostrzeżenia, interakcje, działania niepożądane i substancje pomocnicze."/>
@@ -77,13 +77,13 @@
                        Grid.Column="0"
                        Text="ICD"
                        FontWeight="SemiBold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,12,14"/>
 
                 <TextBlock Grid.Row="2"
                        Grid.Column="1"
                        TextWrapping="Wrap"
-                       Foreground="#374151"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,0,14"
                        LineHeight="20">
                 <Run Text="Lokalna baza kodów rozpoznań używana do szybkiego wyszukiwania jednostek chorobowych i kodów diagnostycznych."/>
@@ -95,13 +95,13 @@
                        Grid.Column="0"
                        Text="Źródła naukowe"
                        FontWeight="SemiBold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,12,14"/>
 
                 <TextBlock Grid.Row="3"
                        Grid.Column="1"
                        TextWrapping="Wrap"
-                       Foreground="#374151"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,0,14"
                        LineHeight="20">
                 <Run Text="Planowane, ręcznie dodawane i weryfikowane publikacje naukowe, wytyczne lub inne materiały medyczne zapisane w lokalnej bazie jako źródła dla RAG."/>
@@ -113,13 +113,13 @@
                        Grid.Column="0"
                        Text="Lokalne reguły"
                        FontWeight="SemiBold"
-                       Foreground="#111827"
+                       Foreground="{StaticResource InkBrush}"
                        Margin="0,0,12,0"/>
 
                 <TextBlock Grid.Row="4"
                        Grid.Column="1"
                        TextWrapping="Wrap"
-                       Foreground="#374151"
+                       Foreground="{StaticResource InkBrush}"
                        LineHeight="20">
                 <Run Text="Ręcznie zatwierdzone reguły, notatki i opisy relacji między substancjami. Tylko takie dane mogą być używane jako podstawa opisów w module InteractionSafetyChecker."/>
                 <LineBreak/>
@@ -127,8 +127,8 @@
                 </TextBlock>
             </Grid>
 
-            <Border Background="#EFF6FF"
-                CornerRadius="8"
+            <Border Background="{StaticResource SoftAccentBrush}"
+                CornerRadius="0"
                 Padding="12"
                 Margin="0,16,0,0"
                 BorderBrush="#BFDBFE"

@@ -3,19 +3,12 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:converters="clr-namespace:DrugCompare.Presentation.Converters"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:behaviors="clr-namespace:DrugCompare.Presentation.Behaviors"
     Background="White">
 
     <UserControl.Resources>
         <converters:SeverityToBrushConverter x:Key="SeverityToBrushConverter"/>
 
-        <!-- Kolory bazowe -->
-        <SolidColorBrush x:Key="PageBackgroundBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF"/>
-        <SolidColorBrush x:Key="BorderBrushSoft" Color="#D1D5DB"/>
-        <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1F2937"/>
-        <SolidColorBrush x:Key="SecondaryTextBrush" Color="#6B7280"/>
-        <SolidColorBrush x:Key="AccentBrush" Color="#374151"/>
-        <SolidColorBrush x:Key="SoftAccentBrush" Color="#F3F4F6"/>
         <SolidColorBrush x:Key="DangerBrush" Color="#DC2626"/>
         <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#FFF7E6"/>
         <SolidColorBrush x:Key="WarningBorderBrush" Color="#F2C879"/>
@@ -34,8 +27,8 @@
         <SolidColorBrush x:Key="SeverityLowBrush" Color="#DCFCE7"/>
         <SolidColorBrush x:Key="SeverityLowBorderBrush" Color="#22C55E"/>
 
-        <SolidColorBrush x:Key="SeverityUnknownBrush" Color="#F3F4F6"/>
-        <SolidColorBrush x:Key="SeverityUnknownBorderBrush" Color="#9CA3AF"/>
+        <SolidColorBrush x:Key="SeverityUnknownBrush" Color="{StaticResource SurfaceRaised}"/>
+        <SolidColorBrush x:Key="SeverityUnknownBorderBrush" Color="{StaticResource Line}"/>
 
         <!-- Karta -->
         <Style x:Key="CardBorderStyle" TargetType="Border">
@@ -49,18 +42,16 @@
 
         <Style x:Key="InnerInfoBorderStyle" TargetType="Border">
             <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
-            <Setter Property="BorderBrush" Value="#C7D2FE"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="10"/>
+            <Setter Property="CornerRadius" Value="0"/>
             <Setter Property="Padding" Value="10"/>
         </Style>
 
         <!-- Teksty -->
-        <Style TargetType="TextBlock">
-            <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
-        </Style>
 
         <Style x:Key="SectionTitleStyle" TargetType="TextBlock">
+            <Setter Property="TextWrapping" Value="Wrap"/>
             <Setter Property="FontSize" Value="18"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
@@ -81,7 +72,7 @@
         </Style>
 
         <!-- TextBox -->
-        <Style TargetType="TextBox">
+        <Style TargetType="TextBox" BasedOn="{StaticResource ClinicalTextBoxStyle}">
             <Setter Property="Height" Value="36"/>
             <Setter Property="Padding" Value="10,6"/>
             <Setter Property="VerticalContentAlignment" Value="Center"/>
@@ -93,7 +84,7 @@
         </Style>
 
         <!-- Button -->
-        <Style x:Key="BaseButtonStyle" TargetType="Button">
+        <Style x:Key="BaseButtonStyle" TargetType="Button" BasedOn="{StaticResource ClinicalButtonStyle}">
             <Setter Property="Height" Value="36"/>
             <Setter Property="MinWidth" Value="92"/>
             <Setter Property="Padding" Value="12,4"/>
@@ -101,7 +92,7 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="BorderBrush" Value="{StaticResource BorderBrushSoft}"/>
-            <Setter Property="Background" Value="#F8FAFC"/>
+            <Setter Property="Background" Value="{StaticResource SurfaceBrush}"/>
             <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
         </Style>
 
@@ -132,7 +123,7 @@
         </Style>
 
         <!-- DataGrid -->
-        <Style TargetType="DataGrid">
+        <Style TargetType="DataGrid" BasedOn="{StaticResource ClinicalDataGridStyle}">
             <Setter Property="AutoGenerateColumns" Value="False"/>
             <Setter Property="CanUserAddRows" Value="False"/>
             <Setter Property="CanUserDeleteRows" Value="False"/>
@@ -146,18 +137,18 @@
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="Background" Value="White"/>
             <Setter Property="RowBackground" Value="White"/>
-            <Setter Property="AlternatingRowBackground" Value="#F9FAFB"/>
+            <Setter Property="AlternatingRowBackground" Value="{StaticResource SurfaceBrush}"/>
             <Setter Property="GridLinesVisibility" Value="Horizontal"/>
             <Setter Property="FontSize" Value="12"/>
             <Setter Property="RowHeight" Value="36"/>
         </Style>
 
         <Style TargetType="DataGridColumnHeader">
-            <Setter Property="Background" Value="#EEF2FF"/>
+            <Setter Property="Background" Value="{StaticResource SoftAccentBrush}"/>
             <Setter Property="Foreground" Value="#1E3A8A"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
             <Setter Property="Padding" Value="8,6"/>
-            <Setter Property="BorderBrush" Value="#C7D2FE"/>
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="0,0,1,1"/>
         </Style>
 
@@ -241,16 +232,25 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Background="White" Margin="0,12,0,0">
+    <DockPanel>
+        <StackPanel DockPanel.Dock="Top" Margin="16,8,16,0">
+            <ProgressBar Style="{StaticResource SearchProgressStyle}"/>
+            <TextBlock Text="{Binding StatusMessage}"
+                       TextWrapping="Wrap" Margin="0,6,0,0"
+                       Foreground="{StaticResource SecondaryTextBrush}"
+                       AutomationProperties.LiveSetting="Polite"/>
+        </StackPanel>
+    <Grid x:Name="InteractionLayout" Background="White" Margin="0,12,0,0">
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="360"/>
-            <ColumnDefinition Width="390"/>
             <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="1.3*"/>
         </Grid.ColumnDefinitions>
 
         <!-- LEWY PANEL -->
         <Border
             Grid.Column="0"
+            IsEnabled="{Binding CanWork}"
             Style="{StaticResource CardBorderStyle}"
             Margin="5,0,8,0">
 
@@ -275,8 +275,12 @@
                         Style="{StaticResource LabelStyle}"/>
 
                     <TextBox
+                        x:Name="DrugSearchTextBox"
+                        behaviors:SearchInputBehavior.SubmitCommand="{Binding FindDrugCommand}"
+                        AutomationProperties.Name="Nazwa leku do sprawdzenia interakcji"
                         Text="{Binding DrugNameInput, UpdateSourceTrigger=PropertyChanged}"
-                        ToolTip="Wpisz nazwę leku, aby wykryć substancje czynne"/>
+                        ToolTip="Wpisz nazwę leku, aby wykryć substancje czynne">
+                    </TextBox>
 
                     <Button
                         Content="Znajdź lek"
@@ -317,8 +321,8 @@
                                 <Border
                                     Margin="0,0,0,6"
                                     Padding="10"
-                                    CornerRadius="10"
-                                    Background="#F8FAFC"
+                                    CornerRadius="0"
+                                    Background="{StaticResource SurfaceBrush}"
                                     BorderBrush="{StaticResource BorderBrushSoft}"
                                     BorderThickness="1">
 
@@ -408,6 +412,7 @@
         <!-- ŚRODKOWY PANEL -->
         <Border
             Grid.Column="1"
+            IsEnabled="{Binding CanWork}"
             Style="{StaticResource CardBorderStyle}"
             Margin="8,0,8,0">
 
@@ -444,7 +449,7 @@
                             <Border
                                 Margin="0,0,0,8"
                                 Padding="12"
-                                CornerRadius="10"
+                                CornerRadius="0"
                                 BorderBrush="{StaticResource BorderBrushSoft}"
                                 BorderThickness="1"
                                 Background="White">
@@ -554,7 +559,7 @@
                     Background="{StaticResource WarningBackgroundBrush}"
                     BorderBrush="{StaticResource WarningBorderBrush}"
                     BorderThickness="1"
-                    CornerRadius="10"
+                    CornerRadius="0"
                     Padding="10"
                     Margin="0,0,0,10">
 
@@ -637,10 +642,10 @@
 
                 <Border
                     Grid.Row="4"
-                    Background="#F8FAFC"
+                    Background="{StaticResource SurfaceBrush}"
                     BorderBrush="{StaticResource BorderBrushSoft}"
                     BorderThickness="1"
-                    CornerRadius="12"
+                    CornerRadius="0"
                     Padding="12">
 
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -681,9 +686,9 @@
 
                             <Border
                                 Background="{StaticResource SoftAccentBrush}"
-                                BorderBrush="#C7D2FE"
+                                BorderBrush="{StaticResource LineBrush}"
                                 BorderThickness="1"
-                                CornerRadius="10"
+                                CornerRadius="0"
                                 Padding="10"
                                 Margin="0,8,0,0">
 
@@ -699,4 +704,5 @@
             </Grid>
         </Border>
     </Grid>
+    </DockPanel>
 </UserControl>

@@ -1,6 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using DrugCompare.ViewModels;
 
 namespace DrugCompare.Views;
 
@@ -10,32 +10,17 @@ public partial class AuditLogView : UserControl
     {
         InitializeComponent();
         IsVisibleChanged += AuditLogView_IsVisibleChanged;
+        DataContextChanged += (_, _) => RefreshWhenVisible();
     }
 
-    private async void AuditLogView_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    private void AuditLogView_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (e.NewValue is not true)
-        {
-            return;
-        }
+        RefreshWhenVisible();
+    }
 
-        if (DataContext is null)
-        {
-            return;
-        }
-
-        if (DataContext.GetType().GetProperty("LoadAuditLogsCommand")?.GetValue(DataContext) is not ICommand command)
-        {
-            return;
-        }
-
-        if (!command.CanExecute(null))
-        {
-            return;
-        }
-
-        command.Execute(null);
-
-        await Task.CompletedTask;
+    private void RefreshWhenVisible()
+    {
+        if (IsVisible && DataContext is MainViewModel vm && vm.LoadAuditLogsCommand.CanExecute(null))
+            vm.LoadAuditLogsCommand.Execute(null);
     }
 }
